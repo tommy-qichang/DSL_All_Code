@@ -1,0 +1,42 @@
+
+model: 'unet'
+backbone: 'unet'
+backbone_pretrained: false
+backbone_freezed: false
+extract_feat: false
+outstride: 1
+img_size: 224
+
+checkname: 'unet'
+dataset: 'path'
+data_dir: "/data/datasets/exp2_path/for_seg_256"
+partition_method: 'hetero'
+partition_alpha: 0.5
+client_num_in_total: 4
+client_num_per_round: 4
+gpu_mapping_file: "../gpu_mapping.yaml"
+gpu_mapping_key: 'mapping_config_sense02_4'
+save_client_model: true
+
+batch_size: 16
+client_optimizer: 'adam'
+lr: 0.001
+lr_scheduler: 'poly'
+lr_step: 0
+loss_type: 'ce'
+loss_reduction: 'none'
+validation_split: 0.2
+
+beta1: 0.5
+momentum: 0.9
+weight_decay: 0.0001
+nesterov: false
+
+comm_round: 100
+epochs: 1
+evaluation_frequency: 10
+input_nc: 3
+output_nc: 3
+
+sync_bn: false
+freeze_bn: false

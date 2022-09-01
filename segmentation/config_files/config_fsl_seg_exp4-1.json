@@ -1,0 +1,78 @@
+{
+    "name": "fsl_brats_seg_exp4-1",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "Unet",
+        "args": {
+            "in_channel" : 4,
+            "out_channel": 2
+        }
+    },
+    "data_loader": {
+        "type": "FasterGeneralDataLoader",
+        "args":{
+            "data_dir": ["/research/cbim/medical/medical-share/public/BraTS2018/AsynDGANv2/General_format_BraTS18_2d_4ch_Seg_train.h5","/research/cbim/medical/medical-share/public/BraTS2018/AsynDGANv2/General_format_BraTS18_2d_4ch_Seg_val.h5"],
+            "batch_size": 32,
+            "shuffle": true,
+            "validation_split": [["train"],["train"]],
+            "num_workers": 0
+        },
+        "transforms": ["ToImage","FilterLabel","Resize", "RandomCrop", "RandomFlip","ToTensor","Normalize"],
+        "transforms_args": {
+            "FilterLabel": [[1,2,3,4,255],[1,1,1,1,1]],
+            "Resize": [286],
+            "RandomCrop": [256],
+            "RandomFlip": [true, true],
+            "Normalize": [[127.5],[127.5]]
+        }
+    },
+    "test_data_loader": {
+        "type": "FasterGeneralDataLoader",
+        "args":{
+            "data_dir": ["/research/cbim/vast/qc58/pub-db/BraTS2018/AsynDGANv2/General_format_BraTS18_test_2d_4ch.h5","/research/cbim/vast/qc58/pub-db/BraTS2018/AsynDGANv2/General_format_BraTS18_test_2d_4ch.h5"],
+            "batch_size": 1,
+            "shuffle": false,
+            "validation_split": [["test"],["test"]],
+            "num_workers": 0
+        },
+        "transforms": ["ToImage","FilterLabel","Padding","ExpCentralCrop2d", "ToTensor","Normalize"],
+        "transforms_args": {
+            "FilterLabel": [[1,2,3,4,255],[1,1,1,1,1]],
+            "Padding": [256],
+            "ExpCentralCrop2d": [256],
+            "Normalize": [[127.5],[127.5]]
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.01,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": ["cross_entropy_loss","tversky_loss"],
+    "metric": ["dice","sensitivity","specificity"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "type": "Trainer",
+        "epochs": 200,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+
+        "monitor": "max val_dice",
+        "early_stop": 50,
+
+        "tensorboard": true,
+        "vis": false
+    }
+}

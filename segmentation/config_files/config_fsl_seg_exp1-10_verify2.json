@@ -1,0 +1,76 @@
+{
+    "name": "fsl_seg_asyndgan_MRI_exp10_verify",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "Unet",
+        "args": {
+            "in_channel" : 1,
+            "out_channel": 8
+        }
+    },
+    "data_loader": {
+        "type": "FasterGeneralDataLoader",
+        "args":{
+            "data_dir": ["/research/cbim/vast/qc58/pub-db/MMWHS/FSL/verify/Verify_WHS_train_2d.h5","/research/cbim/vast/qc58/pub-db/MMWHS/FSL/verify/Verify_WHS_val_2d.h5"],
+            "batch_size": 64,
+            "shuffle": true,
+            "validation_split": [["train"],["train"]],
+            "num_workers": 0
+        },
+        "transforms": ["Unsqueeze","Resize", "RandomCrop", "RandomFlip", "RandomRotate","ToTensor","Normalize"],
+        "transforms_args": {
+            "Resize": [286],
+            "RandomCrop": [256],
+            "RandomFlip": [true, true],
+            "Normalize": [[298],[287]]
+        }
+    },
+    "test_data_loader": {
+        "type": "GeneralDataLoader",
+        "args":{
+            "data_dir": "/research/cbim/vast/qc58/pub-db/MMWHS/FSL/whs_mr_test_2d_iso.h5",
+            "batch_size": 1,
+            "shuffle": false,
+            "validation_split": 0,
+            "num_workers": 0
+        },
+        "transforms": ["Unsqueeze","Padding", "ExpCentralCrop2d", "ToTensor","Normalize"],
+        "transforms_args": {
+            "Padding": [512],
+            "ExpCentralCrop2d": [512],
+            "Normalize": [[298],[287]]
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.01,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": ["cross_entropy_loss","tversky_loss"],
+    "metric": ["dice", "dice_cat1","dice_cat2","dice_cat3", "dice_cat4","dice_cat5","dice_cat6","dice_cat7"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "type": "Trainer",
+        "epochs": 200,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+
+        "monitor": "max val_dice",
+        "early_stop": 50,
+
+        "tensorboard": true,
+        "vis": false
+    }
+}

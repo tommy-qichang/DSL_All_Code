@@ -1,0 +1,39 @@
+
+model: 'deeplabV3_plus'
+backbone: 'xception'
+backbone_pretrained: true
+backbone_freezed: true
+extract_feat: false
+outstride: 16
+
+checkname: 'deeplab-resnet'
+dataset: 'coco'
+data_dir: "./../../../data/coco"
+partition_method: 'hetero'
+partition_alpha: 0.5
+client_num_in_total: 10
+client_num_per_round: 10
+gpu_mapping_file: "../gpu_mapping.yaml"
+gpu_mapping_key: 'mapping_config_sense02_10'
+save_client_model: true
+
+batch_size: 10
+client_optimizer: 'sgd'
+lr: 0.001
+lr_scheduler: 'poly'
+lr_step: 0
+loss_type: 'ce'
+
+beta1: 0.5
+momentum: 0.9
+weight_decay: 5.e-4
+nesterov: false
+
+comm_round: 200
+epochs: 20
+evaluation_frequency: 5
+input_nc: 4
+output_nc: 2
+
+sync_bn: false
+freeze_bn: false

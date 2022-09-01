@@ -1,0 +1,77 @@
+{
+    "name": "fsl_seg_asyndgan_CT_exp6-3_da",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "Unet",
+        "args": {
+            "in_channel" : 1,
+            "out_channel": 8
+        }
+    },
+    "data_loader": {
+        "type": "FasterGeneralDataLoader",
+        "args":{
+            "data_dir": ["/research/cbim/vast/qc58/biobank-dcm/projects_hq/AsynDGAN/results/fsl_cardiac_exp1_nature/fsl_cardiac_exp1_nature/fsl_resnet_9blocks_ct_x2.h5","/research/cbim/vast/qc58/pub-db/MMWHS/FSL/seg_all_val_2d_iso.h5"],
+            "batch_size": 64,
+            "shuffle": true,
+            "validation_split": [["train"],["val"]],
+            "num_workers": 0
+        },
+        "transforms": ["ToImage","Unsqueeze","Resize", "RandomCrop", "RandomFlip","ToTensor","Normalize"],
+        "transforms_args": {
+            "Resize": [286],
+            "RandomCrop": [256],
+            "RandomFlip": [true, true],
+            "Normalize": [[127.5],[127.5]]
+        }
+    },
+    "test_data_loader": {
+        "type": "FasterGeneralDataLoader",
+        "args":{
+            "data_dir": "/research/cbim/vast/qc58/pub-db/MMWHS/FSL/all_test_2d_iso.h5",
+            "batch_size": 1,
+            "shuffle": false,
+            "validation_split": 0,
+            "num_workers": 0
+        },
+        "transforms": ["Windowfilter","ToImage","Unsqueeze","Resize","ExpCentralCrop2d", "ToTensor","Normalize"],
+        "transforms_args": {
+            "Windowfilter": [200,1000],
+            "Resize": [256],
+            "ExpCentralCrop2d": [256],
+            "Normalize": [[127.5],[127.5]]
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.01,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": ["cross_entropy_loss","tversky_loss"],
+    "metric": ["dice", "dice_cat1","dice_cat2","dice_cat3", "dice_cat4","dice_cat5","dice_cat6","dice_cat7", "surface_distance_avg", "surface_distance_cat1", "surface_distance_cat2", "surface_distance_cat3", "surface_distance_cat4", "surface_distance_cat5", "surface_distance_cat6", "surface_distance_cat7", "hausdorff_distance95_avg", "hausdorff_distance95_cat1", "hausdorff_distance95_cat2", "hausdorff_distance95_cat3", "hausdorff_distance95_cat4", "hausdorff_distance95_cat5", "hausdorff_distance95_cat6", "hausdorff_distance95_cat7"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "type": "Trainer",
+        "epochs": 200,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+
+        "monitor": "max val_dice",
+        "early_stop": 50,
+
+        "tensorboard": true,
+        "vis": false
+    }
+}

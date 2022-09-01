@@ -1,0 +1,77 @@
+{
+    "name": "fsl_seg_asyndgan_MRI_exp7-3",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "Unet",
+        "args": {
+            "in_channel" : 1,
+            "out_channel": 8
+        }
+    },
+    "data_loader": {
+        "type": "FasterGeneralDataLoader",
+        "args":{
+            "data_dir": ["/research/cbim/vast/qc58/local/local_db/MMWHS/FSL/syn/fsl_resnet_9blocks_epoch100_mmwhs_mri.h5","/research/cbim/vast/qc58/local/local_db/MMWHS/FSL/seg_whs_mri_val_2d_iso.h5"],
+            "batch_size": 32,
+            "shuffle": true,
+            "validation_split": [["train"],["val"]],
+            "num_workers": 0
+        },
+        "transforms": ["HistMatch2","Unsqueeze","Padding", "RandomCrop", "RandomFlip", "RandomRotate","ToTensor","Normalize"],
+        "transforms_args": {
+            "Padding": [286],
+            "RandomCrop": [256],
+            "RandomFlip": [true, true],
+            "Normalize": [[42.96],[39.63],[361.59],[340.6]]
+        }
+    },
+    "test_data_loader": {
+        "type": "FasterGeneralDataLoader",
+        "args":{
+            "data_dir": "/research/cbim/vast/qc58/pub-db/MMWHS/FSL/whs_mr_test_2d_iso.h5",
+            "batch_size": 1,
+            "shuffle": false,
+            "validation_split": 0,
+            "num_workers": 0
+        },
+        "transforms": ["Unsqueeze","Padding", "ExpCentralCrop2d", "ToTensor","NormalizeMinmax","Normalize"],
+        "transforms_args": {
+            "Padding": [512],
+            "ExpCentralCrop2d": [512],
+            "NormalizeMinmax": [0, 255],
+            "Normalize": [[127.5],[127.5]]
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.01,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": ["cross_entropy_loss","tversky_loss"],
+    "metric": ["dice", "dice_cat1","dice_cat2","dice_cat3", "dice_cat4","dice_cat5","dice_cat6","dice_cat7"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "type": "Trainer",
+        "epochs": 200,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+
+        "monitor": "max val_dice",
+        "early_stop": 50,
+
+        "tensorboard": true,
+        "vis": false
+    }
+}

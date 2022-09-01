@@ -1,0 +1,76 @@
+{
+    "name": "fsl_seg_asyndgan_MRI_exp10_3d",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "Unet3d",
+        "args": {
+            "in_channel" : 1,
+            "out_channel": 2
+        }
+    },
+    "data_loader": {
+        "type": "FasterGeneralDataLoader",
+        "args":{
+            "data_dir": ["/research/cbim/vast/qc58/pub-db/MMWHS/FSL/seg_whs_mri_train_3d_iso_12mm.h5","/research/cbim/vast/qc58/pub-db/MMWHS/FSL/seg_whs_mri_val_3d_iso_12mm.h5"],
+            "batch_size": 4,
+            "shuffle": true,
+            "validation_split": [["train"],["val"]],
+            "num_workers": 0
+        },
+        "transforms": ["Unsqueeze","Padding3d", "RandomCrop3d", "RandomFlip", "RandomRotate","ToTensor","Normalize3d"],
+        "transforms_args": {
+            "Padding3d": [74],
+            "RandomCrop3d": [64],
+            "RandomFlip": [true, true],
+            "Normalize3d": [[181],[257]]
+        }
+    },
+    "test_data_loader": {
+        "type": "GeneralDataLoader",
+        "args":{
+            "data_dir": "/research/cbim/vast/qc58/pub-db/MMWHS/FSL/whs_mr_test_2d_iso.h5",
+            "batch_size": 1,
+            "shuffle": false,
+            "validation_split": 0,
+            "num_workers": 0
+        },
+        "transforms": ["Unsqueeze","Padding", "ExpCentralCrop2d", "ToTensor","Normalize"],
+        "transforms_args": {
+            "Padding": [512],
+            "ExpCentralCrop2d": [512],
+            "Normalize": [[298],[287]]
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.01,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": ["cross_entropy_loss"],
+    "metric": ["dice"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "type": "Trainer",
+        "epochs": 200,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+
+        "monitor": "max val_dice",
+        "early_stop": 50,
+
+        "tensorboard": true,
+        "vis": false
+    }
+}

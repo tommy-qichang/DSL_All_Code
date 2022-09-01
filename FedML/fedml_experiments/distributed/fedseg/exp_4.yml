@@ -1,0 +1,40 @@
+
+model: 'unet'
+backbone: 'unet'
+backbone_pretrained: false
+backbone_freezed: false
+extract_feat: false
+outstride: 1
+
+checkname: 'unet'
+dataset: 'brats'
+data_dir: "/data/datasets/asdgan_data/fedseg_data/exp4_brats"
+partition_method: 'hetero'
+partition_alpha: 0.5
+client_num_in_total: 3
+client_num_per_round: 3
+gpu_mapping_file: "../gpu_mapping.yaml"
+gpu_mapping_key: 'mapping_config_sense02_3'
+save_client_model: true
+
+batch_size: 20
+client_optimizer: 'adam'
+lr: 0.01
+lr_scheduler: 'poly'
+lr_step: 0
+loss_type: 'cedice'
+loss_reduction: 'mean'
+
+beta1: 0.5
+momentum: 0.9
+weight_decay: 0
+nesterov: false
+
+comm_round: 100
+epochs: 1
+evaluation_frequency: 10
+input_nc: 4
+output_nc: 2
+
+sync_bn: false
+freeze_bn: false
