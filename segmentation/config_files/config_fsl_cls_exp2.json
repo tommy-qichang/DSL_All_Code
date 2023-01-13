@@ -1,0 +1,71 @@
+{
+    "name": "FSL_cls_real_exp1",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "Vgg11Bn",
+        "args": {
+            "num_classes": 2,
+            "in_channel" : 4
+        }
+    },
+    "data_loader": {
+        "type": "FasterGeneralDataLoader",
+        "args":{
+            "data_dir": ["/research/cbim/vast/qc58/local/local_db/tmp_data/cls/fsl/Brats4ch3db_cls_nature_exp2/test_160/brats_resnet_9blocks_epoch160_mri.h5","/research/cbim/vast/qc58/local/local_db/tmp_data/cls/General_format_BraTS18_CLS_test_2d_final.h5"],
+            "batch_size": 256,
+            "shuffle": true,
+            "validation_split": [["train"],["train"]],
+            "num_workers": 0
+        },
+        "transforms": ["ToImage","Resize", "RandomCrop", "RandomFlip","NormalizeMinmax2","ToTensor"],
+        "transforms_args": {
+            "Resize": [286],
+            "RandomCrop": [256]
+        }
+    },
+    "test_data_loader": {
+        "type": "FasterGeneralDataLoader",
+        "args":{
+            "data_dir": ["/research/cbim/vast/qc58/local/local_db/tmp_data/cls/General_format_BraTS18_CLS_test_2d_final.h5","/research/cbim/vast/qc58/local/local_db/tmp_data/cls/General_format_BraTS18_CLS_test_2d_final.h5"],
+            "batch_size": 256,
+            "validation_split": [["train"],["train"]],
+            "shuffle": false,
+            "num_workers": 0
+        },
+        "transforms": ["ToImage","Resize","NormalizeMinmax2","ToTensor"],
+        "transforms_args": {
+            "Resize": [256]
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.001,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": ["cross_entropy_loss"],
+    "metric": ["accuracy", "sensitivity","specificity"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "type": "Trainer",
+        "epochs": 300,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+        
+        "monitor": "min val_loss",
+        "early_stop": 10,
+
+        "tensorboard": true
+    }
+}

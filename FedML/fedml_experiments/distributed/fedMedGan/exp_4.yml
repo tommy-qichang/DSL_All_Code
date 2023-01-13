@@ -1,0 +1,62 @@
+
+model: 'dadgan_mc'
+checkname: 'fedmedgan_mc'
+dataset: 'brats'
+data_dir: "../../../../datasets/brats"
+partition_method: 'hetero'
+partition_alpha: 0.5
+client_num_in_total: 3
+client_num_per_round: 3
+gpu_mapping_file: "../gpu_mapping.yaml"
+gpu_mapping_key: 'mapping_config_sense02_3'
+save_client_model: true
+
+batch_size: 4
+client_optimizer: 'adam'
+lr: 0.0002
+
+beta1: 0.5
+momentum: 0.9
+weight_decay: 5.e-4
+nesterov: false
+
+comm_round: 200
+epochs: 1
+evaluation_frequency: 10
+dl_num_workers: 0
+input_nc: 4
+output_nc: 4
+ngf: 64
+ndf: 64
+gan_mode: 'vanilla'
+netG: 'resnet_9blocks'
+netD: 'basic'
+n_layers_D: 3
+norm: 'instance'
+init_type: 'normal'
+init_gain: 0.02
+no_dropout: false
+
+lambda_L1: 100
+lambda_perceptual: 1
+lambda_G: 1
+lambda_D: 0.5
+pool_size: 0
+lr_policy: 'linear'
+epoch_count: 1
+niter: 200
+niter_decay: 200
+lr_decay_iters: 50
+lr_decay_gamma: 0.1
+verbose: false
+
+continue_train: false
+brain_mask_input: 0
+brain_mask_noise: 0.
+mask_L1_loss: false
+
+backbone_freezed: false
+sync_bn: false
+freeze_bn: false
+
+up_mode: transpose
