@@ -77,7 +77,7 @@ class BaseModel(ABC):
         """Calculate losses, gradients, and update network weights; called in every training iteration"""
         pass
 
-    def setup(self, opt):
+    def setup(self, opt, process_id=-1):
         """Load and print networks; create schedulers
 
         Parameters:
@@ -85,9 +85,17 @@ class BaseModel(ABC):
         """
         if self.isTrain:
             self.schedulers = [networks.get_scheduler(optimizer, opt) for optimizer in self.optimizers]
-        if not self.isTrain or opt.continue_train:
+
+        if not self.isTrain:
             load_suffix = 'iter_%d' % opt.load_iter if opt.load_iter > 0 else opt.epoch
             self.load_networks_from_disk(load_suffix, opt.save_dir, opt.load_filename)
+        elif opt.continue_train:
+            load_suffix = 'iter_%d' % opt.load_iter if opt.load_iter > 0 else opt.epoch
+            if process_id == -1:
+                load_filename = 'aggregated_checkpoint_%d.pth.tar' % opt.epoch
+            else:
+                load_filename = 'client_%d_checkpoint_ep%d.pth.tar' % (process_id, opt.epoch)
+            self.load_networks_from_disk(load_suffix, opt.save_dir, load_filename)
         self.print_networks(opt.verbose)
 
     def eval(self):
@@ -191,11 +199,12 @@ class BaseModel(ABC):
         else:
             self.__patch_instance_norm_state_dict(state_dict, getattr(module, key), keys, i + 1)
 
-    def get_weights(self):
+    def get_weights(self, model_name=None):
         """return all the networks parameters.
         """
         state_dicts = {}
-        for name in self.model_names:
+        model_names = self.model_names if model_name is None else model_name
+        for name in model_names:
             if isinstance(name, str):
                 net_name = 'net' + name
                 net = getattr(self, net_name)
@@ -214,15 +223,20 @@ class BaseModel(ABC):
                 state_dicts[net_name] = state_dict
         return state_dicts
 
-    def load_weights(self, state_dicts):
+    def load_weights(self, state_dicts, model_name=None):
         """Load all the networks from the state_dicts.
 
         Parameters:
             state_dicts (dict) -- all parameters
+            model_name (list of model name) -- if None (default), use the model's default model_names
         """
-        for name in self.model_names:
+        model_names = self.model_names if model_name is None else model_name
+        for name in model_names:
             if isinstance(name, str):
                 net = getattr(self, 'net' + name)
+                if 'net' +name not in state_dicts.keys():
+                    print('model net%s not in state_dict' % name)
+                    continue
                 net_state_dict = state_dicts['net' + name]
                 if isinstance(net, list):
                     for idx, sub_net in enumerate(net):
@@ -259,9 +273,19 @@ class BaseModel(ABC):
             save_dir (str) -- path to the directory
             load_filename (str) -- filename of checkpoint
         """
+        if load_filename is not None:
+            load_path = os.path.join(save_dir, load_filename)
+            print('loading the model from %s' % load_path)
+            ckpt = torch.load(load_path, map_location=self.device)
+
         for name in self.model_names:
             if isinstance(name, str):
                 net = getattr(self, 'net' + name)
+
+                if load_filename is not None:
+                    if 'net' + name not in ckpt["state_dict"].keys():
+                        print('net%s model not found in state_dict' % name)
+                        continue
 
                 if isinstance(net,list):
                     for idx, sub_net in enumerate(net):
@@ -270,13 +294,19 @@ class BaseModel(ABC):
                             module = sub_net.module
                         else:
                             module = sub_net
+
                         if load_filename is None:
                             load_filename = '%s_net_%s_%s.pth' % (epoch, name, str(idx))
-                        load_path = os.path.join(save_dir, load_filename)
-                        print('loading the model from %s' % load_path)
+                            load_path = os.path.join(save_dir, load_filename)
+                            print('loading the model from %s' % load_path)
 
-                        ckpt = torch.load(load_path, map_location=self.device)
-                        state_dict = ckpt["state_dict"]['net' + name]
+                            ckpt = torch.load(load_path, map_location=self.device)
+                            if 'state_dict' in ckpt.keys():
+                                state_dict = ckpt["state_dict"]['net' + name]
+                            else:
+                                state_dict = ckpt
+                        else:
+                            state_dict = ckpt["state_dict"]['net' + name][idx]
                         # if hasattr(state_dict, '_metadata'):
                         #     del state_dict._metadata
 
@@ -289,13 +319,19 @@ class BaseModel(ABC):
                         module = net.module
                     else:
                         module = net
+
                     if load_filename is None:
                         load_filename = '%s_net_%s.pth' % (epoch, name)
-                    load_path = os.path.join(save_dir, load_filename)
-                    print('loading the model from %s' % load_path)
+                        load_path = os.path.join(save_dir, load_filename)
+                        print('loading the model from %s' % load_path)
 
-                    ckpt = torch.load(load_path, map_location=self.device)
-                    state_dict = ckpt["state_dict"]['net' + name]
+                        ckpt = torch.load(load_path, map_location=self.device)
+                        if 'state_dict' in ckpt.keys():
+                            state_dict = ckpt["state_dict"]['net' + name]
+                        else:
+                            state_dict = ckpt
+                    else:
+                        state_dict = ckpt["state_dict"]['net' + name]
                     # if hasattr(state_dict, '_metadata'):
                     #     del state_dict._metadata
 

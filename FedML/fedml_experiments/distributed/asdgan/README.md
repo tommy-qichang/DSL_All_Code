@@ -3,20 +3,20 @@ http://doc.fedml.ai/#/installation-distributed-computing
 
 ## Run Experiments
 
-## AsynDGAN on BRATS experiments
-3 clients training, T2 data, 200 epochs, batch size 20/client (sample method 'balance'):
+## DSL on BRATS experiments
+3 clients training, multi-modality data, 200 epochs, batch size 6/client (sample method 'balance'):
 ```
-sh run_asdgan_distributed_pytorch.sh 4 default.yml
+sh run_asdgan_distributed_pytorch.sh 4 n_exp_4.yml
 ```
 
 
 ## run on background
 ```
-nohup sh run_asdgan_distributed_pytorch.sh 4 default.yml > ./log_default.txt 2>&1 &
 nohup sh run_asdgan_distributed_pytorch.sh 4 n_exp_1.yml> ./log_nature_exp1.txt 2>&1 &
 nohup sh run_asdgan_distributed_pytorch.sh 5 n_exp_2.yml> ./log_nature_exp2.txt 2>&1 &
 nohup sh run_asdgan_distributed_pytorch.sh 4 n_exp_4.yml> ./log_nature_exp4.txt 2>&1 &
 nohup sh run_asdgan_distributed_pytorch.sh 4 n_exp_4_miss_mod.yml> ./log_nature_exp4_mm.txt 2>&1 &
+nohup sh run_asdgan_distributed_pytorch.sh 4 n_exp_4_dp.yml> ./log_nature_exp4_dp.txt 2>&1 &
 ```
 
 

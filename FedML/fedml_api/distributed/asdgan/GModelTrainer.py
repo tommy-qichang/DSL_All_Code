@@ -14,7 +14,7 @@ from .utils import EvaluationMetricsKeeper, float_to_uint_img
 def convert_to_img(A, B, fake_B):
     nc = B.shape[0]
 
-    syn_img = float_to_uint_img(fake_B, (240, 240), 1, minv=-1, maxv=1)
+    syn_img = float_to_uint_img(fake_B, (256, 256), 1, minv=-1, maxv=1)
 
     label = A
     # values = np.unique(label)
@@ -25,9 +25,9 @@ def convert_to_img(A, B, fake_B):
 
     if len(label.shape) == 3:
         label = label[0]
-    label = float_to_uint_img(label, (240, 240), 0, minv=0, maxv=1)
+    label = float_to_uint_img(label, (256, 256), 0, minv=-1, maxv=1)
 
-    realdata = float_to_uint_img(B, (240, 240), 1, minv=-1, maxv=1)
+    realdata = float_to_uint_img(B, (256, 256), 1, minv=-1, maxv=1)
 
     return label, realdata, syn_img
 
@@ -38,7 +38,7 @@ class GModelTrainer(ModelTrainer):
         self.id = id
         self.node_name = 'Server'
 
-        self.model.setup(args)
+        self.model.setup(args, id)
 
     def get_model_params(self):
         logging.info('[{}] Obtain model parameters'.format(self.node_name))
@@ -78,18 +78,33 @@ class GModelTrainer(ModelTrainer):
         evaluation_results = {'batch_label': [], 'batch_img': [], 'batch_syn_img': [], 'batch_key': []}
 
         batch = next(iter(test_data))
+        with torch.no_grad():
+            syn_img = self.model.evaluate(batch)
 
-        syn_img = self.model.evaluate(batch)
-        A = batch['A'].detach().cpu().numpy()
-        B = batch['B'].detach().cpu().numpy()
-        for j in range(syn_img.shape[0]):
-            label, img, syn = convert_to_img(A[j], B[j], syn_img[j])
-            evaluation_results['batch_label'].append(label)
-            evaluation_results['batch_img'].append(img)
-            evaluation_results['batch_syn_img'].append(syn)
-            evaluation_results['batch_key'].append(batch['key'][j])
+            A = batch['A'].detach().cpu().numpy()
+            B = batch['B'].detach().cpu().numpy()
+            for j in range(syn_img.shape[0]):
+                label, img, syn = convert_to_img(A[j], B[j], syn_img[j])
+                evaluation_results['batch_label'].append(label)
+                evaluation_results['batch_img'].append(img)
+                evaluation_results['batch_syn_img'].append(syn)
+                evaluation_results['batch_key'].append(batch['key'][j])
 
         return evaluation_results
+
+    def infer_test(self, test_data, device):
+
+        all_synthetic_image = []
+
+        with torch.no_grad():
+            for batch in test_data:
+                syn_img = self.model.evaluate(batch)
+
+                for j in range(syn_img.shape[0]):
+                    syn_img = float_to_uint_img(syn_img[j], (256, 256), 1, minv=-1, maxv=1)
+                    all_synthetic_image.append(syn_img)
+
+        return all_synthetic_image
 
     def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
         return False

@@ -118,7 +118,7 @@ def build_pairs_complete(dataset, sample_rate):
 
     keys = list(images.keys())
 
-    if 1 > sample_rate > 0.:
+    if 1 > sample_rate >= 0.:
         sample_size = max(1, int(len(keys) * sample_rate))
         sample_idx = np.random.choice(len(keys), sample_size, replace=False)
         keys = [keys[i] for i in sample_idx]

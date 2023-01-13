@@ -44,4 +44,4 @@ mapping_config_sense02_1:
     localhost: [1, 1, 0, 0]
 
 mapping_config_sense02_4:
-    localhost: [2, 1, 1, 1]
+    localhost: [1, 1, 1, 2]

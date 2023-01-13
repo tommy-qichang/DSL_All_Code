@@ -7,6 +7,7 @@ import h5py
 import os
 
 from .data_utility import init_transform, count_samples, build_pairs
+from fedml_api.Dist_FID.fid_score import get_activations
 
 
 logging.basicConfig()
@@ -21,24 +22,24 @@ def get_transforms_G():
         "RandomFlip": [True, True]
     }
 
-    transforms_test = ["Resize", "ToTensorScale", "Normalize"]
+    transforms_test = ["Resize", "ToTensorScale", "NormalizeBoth"]
     transforms_args_test = {
         "Resize": [256],
-        "ToTensorScale": ['float', 255, 5],
-        "Normalize": [0.5, 0.5]  # only normalize image
+        "ToTensorScale": ['float', 255, 255],
+        "NormalizeBoth": [0.5, 0.5]  # normalize image and label
     }
 
     return init_transform(transforms_train, transforms_args_train), init_transform(transforms_test, transforms_args_test)
 
 
 def get_transforms_D():
-    transforms_train = ["RandomCrop", "RandomFlip", "ToTensorScale", "Normalize"]
+    transforms_train = ["RandomCrop", "RandomFlip", "ToTensorScale", "NormalizeBoth"]
     transforms_args_train = {
         # "Resize": [286],   # preprocessed in datasetD
         "RandomCrop": [256],
         "RandomFlip": [True, True],
-        "ToTensorScale": ['float', 255, 5],
-        "Normalize": [0.5, 0.5]  # only normalize image
+        "ToTensorScale": ['float', 255, 255],
+        "NormalizeBoth": [0.5, 0.5]  # normalize image and label
     }
 
     return init_transform(transforms_train, transforms_args_train), None
@@ -58,7 +59,7 @@ def get_dataloader_G(h5_train, h5_test, train_bs, test_bs, sample_method, channe
                               channel=channel,
                               channel_in=channel_in,
                               path="train",
-                              sample_rate=0.01,
+                              sample_rate=0.001,
                               transforms=transform_test,
                               use_brain_mask=use_brain_mask)
         test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=False, pin_memory=True)
@@ -242,6 +243,8 @@ class DatasetG(data.Dataset):
             noise_u[noise_u > label_brain*2/3] = label_brain*2/3
             As[As==label_brain] = As[As==label_brain] + noise_u[As==label_brain]
 
+        As = (As - 0.5) / 0.5
+
         if self.channel_in > As.shape[1]:
             As = np.repeat(As, self.channel_in, axis=1)
 
@@ -309,12 +312,33 @@ class DatasetD:
 
         return torch.stack(data_batch), torch.stack(label_batch)
 
+    def get_data_statistics(self, batch_size=50, device='cpu', num_workers=1):
+        """Calculation of the statistics used by the Dist-FID.
+            Params:
+            -- batch_size  : The images numpy array is split into batches with
+                             batch size batch_size. A reasonable batch size
+                             depends on the hardware.
+            -- device      : Device to run calculations
+            -- num_workers : Number of parallel dataloader workers
+
+            Returns:
+            -- mu    : The mean over samples of the activations of the pool_3 layer of
+                       the inception model.
+            -- sigma : The covariance matrix of the activations of the pool_3 layer of
+                       the inception model.
+            """
+
+        act = get_activations(self.dcm, batch_size=batch_size, device=device, num_workers=num_workers)
+        mu = np.mean(act, axis=0)
+        sigma = np.cov(act, rowvar=False)
+        return mu, sigma
+
     def __len__(self):
         return len(self.dcm)
 
 
 class TestDataset(data.Dataset):
-    def __init__(self, h5_filepath, channel=None, transforms=None, path="train", sample_rate=0.5, use_brain_mask=False, channel_in=1):
+    def __init__(self, h5_filepath, channel=None, transforms=None, path="train", sample_rate=0.01, use_brain_mask=False, channel_in=1):
         """
         :param h5_filepath:string h5 file path to load.
         :param transforms: my_transforms

@@ -1,5 +1,5 @@
 
-import surface_distance
+import metric.surface_distance.metrics as metrics
 import torch
 import numpy as np
 
@@ -17,7 +17,8 @@ def surface_distance_calc(output, target, misc, label_idx):
     if "spacing_mm" in misc:
         spacing_mm = misc['spacing_mm']
     else:
-        spacing_mm = 1
+        spacing_mm = [1, 1, 1]
+    # print('spacing:', spacing_mm)
     with torch.no_grad():
         pred = torch.argmax(output, 1)
         pred_bool = (pred == label_idx)
@@ -25,7 +26,7 @@ def surface_distance_calc(output, target, misc, label_idx):
         assert pred_bool.shape == target_bool.shape
         pred_bool = pred_bool.cpu().numpy()
         target_bool = target_bool.cpu().numpy()
-        sd = surface_distance.compute_surface_distances(target_bool, pred_bool, spacing_mm)
+        sd = metrics.compute_surface_distances(target_bool, pred_bool, spacing_mm)
         gt_to_pred = sd['distances_gt_to_pred'].mean()
         pred_to_pred = sd['distances_pred_to_gt'].mean()
         avg = np.array([gt_to_pred, pred_to_pred]).mean()

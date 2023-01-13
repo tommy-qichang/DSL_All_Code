@@ -1,7 +1,4 @@
 
-import surface_distance
-import torch
-import numpy as np
 
 from metric.hausdorff_distance95_avg import hausdorff_distance95_calc
 

@@ -1,11 +1,14 @@
 import argparse
 
 import h5py
-from pytorch_fid import fid_score
+
 import os
 import PIL.Image
 from shutil import rmtree
 import numpy as np
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+from fedml_api.Dist_FID import fid_score
 
 
 def adjust_dynamic_range(data, drange_in, drange_out):
@@ -16,19 +19,17 @@ def adjust_dynamic_range(data, drange_in, drange_out):
     return data
 
 
-def calculate_fid_from_h5(real_h5,fake_h5_list, lv1_name="train", tmp_folder="./_calculate_fid_#real_id#", oldformat=False, fake_h5_ch=-1, isrgb=False):
-    base_name = os.path.basename(real_h5).replace(".h5","")
-    tmp_folder = tmp_folder.replace("#real_id#", base_name)
+def calculate_fid_from_h5(real_h5,fake_h5_list, lv1_name="train", tmp_folder="./_calculate_fid_dir", oldformat=False, fake_h5_ch=-1, isrgb=False):
+    # base_name = os.path.basename(real_h5).replace(".h5","")
+    # tmp_folder = tmp_folder.replace("#real_id#", base_name)
     print(f"tmp folder:{tmp_folder}")
     real_path = os.path.join(tmp_folder,"real")
     fake_path = os.path.join(tmp_folder,"fake")
 
     if os.path.isdir(real_path):
         rmtree(real_path, ignore_errors=True)
-    if os.path.isdir(fake_path):
-        rmtree(fake_path, ignore_errors=True)
     os.makedirs(real_path, exist_ok=True)
-    os.makedirs(fake_path,exist_ok=True)
+
     if not oldformat:
         level_append = "/data"
     else:
@@ -64,6 +65,10 @@ def calculate_fid_from_h5(real_h5,fake_h5_list, lv1_name="train", tmp_folder="./
                     im_ch.save(os.path.join(real_path, str(idx)+"_"+str(ch)+".png"))
 
     for fake_h5 in fake_h5_list:
+        if os.path.isdir(fake_path):
+            rmtree(fake_path, ignore_errors=True)
+        os.makedirs(fake_path, exist_ok=True)
+
         fakeh5 = h5py.File(fake_h5, 'r')
         fake_keys = list(fakeh5[lv1_name].keys())
         print(f"start save fake images from {fake_h5}({len(fake_keys)})...")

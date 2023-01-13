@@ -110,12 +110,6 @@ class Saver(object):
 
 
 def float_to_uint_img(img, new_size=None, order=1, minv=None, maxv=None):
-    if new_size:
-        if len(img.shape) == 3:
-            img = np.moveaxis(img, 0, -1)
-        img = resize(img, new_size, order=order, preserve_range=True)
-        if len(img.shape) == 3:
-            img = np.moveaxis(img, -1, 0)
 
     if minv is None:
         minv = img.min()
@@ -124,6 +118,14 @@ def float_to_uint_img(img, new_size=None, order=1, minv=None, maxv=None):
     img = (img - minv) * (255 / (maxv - minv))
     img[img > 255] = 255
     img[img < 0] = 0
+
+    if new_size:
+        if len(img.shape) == 3:
+            img = np.moveaxis(img, 0, -1)
+        img = resize(img, new_size, order=order, preserve_range=True)
+        if len(img.shape) == 3:
+            img = np.moveaxis(img, -1, 0)
+
     img = np.round(img).astype("uint8")
 
     return img

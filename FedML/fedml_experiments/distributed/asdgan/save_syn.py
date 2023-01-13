@@ -70,6 +70,8 @@ def add_args():
     parser.add_argument('--save_data', default=False, action='store_true', help='save for segmentation training')
     parser.add_argument('--up_mode', default='transpose', type=str)
 
+    parser.add_argument('--syn_round', default=1, type=int)
+
     args = parser.parse_args()
 
     args.isTrain = False
@@ -103,11 +105,15 @@ def create_dataset(args, channel_in, test_bs, sample_rate=0.1, use_brain_mask=Fa
         from fedml_api.data_preprocessing.brats.data_loader_asdgan import TestDataset
         h5_test = os.path.join(args.data_dir, 'General_format_BraTS18_train_2d_4ch.h5')
 
-        transforms_test = ["Resize", "ToTensorScale", "Normalize"]
+        transforms_test = ["Resize", "ToTensorScale", "NormalizeBoth"]
+        # transforms_test = ["Resize", "RandomResize", "RandomRotate", "RandomCrop", "ToTensorScale", "NormalizeBoth"]
         transforms_args_test = {
             "Resize": [args.crop_size],
-            "ToTensorScale": ['float', 255, 5],
-            "Normalize": [0.5, 0.5]
+            "RandomResize": [[1, 1.05]],
+            "RandomRotate": [5],
+            "RandomCrop": [args.crop_size],
+            "ToTensorScale": ['float', 255, 255],
+            "NormalizeBoth": [0.5, 0.5]
         }
         transform_test = init_transform(transforms_test, transforms_args_test)
 
@@ -131,9 +137,9 @@ def create_dataset(args, channel_in, test_bs, sample_rate=0.1, use_brain_mask=Fa
     elif 'path' in args.dataset:
         from fedml_api.data_preprocessing.exp2_path.data_loader_gan import TestDataset
         h5_test = os.path.join(args.data_dir, 'train_all.h5')  # random crop in for_gan_training_286
-        # h5_test = '/data/datasets/exp2_path/for_seg_256/train_all.h5'
+
         print(h5_test)
-        # transforms_test = ["RandomResize", "RandomRotate", "RandomCrop", "RandomFlip", "ToTensorScale", "Normalize"]
+        # transforms_test = ["RandomResize", "RandomRotate", "RandomSwitchxy", "RandomCrop", "RandomFlip", "ToTensorScale", "Normalize"]
         transforms_test = ["RandomResize", "RandomCrop", "ToTensorScale", "Normalize"]
         # transforms_test = ["CenterCrop", "ToTensorScale", "Normalize"]
         transforms_args_test = {
@@ -155,11 +161,11 @@ def create_dataset(args, channel_in, test_bs, sample_rate=0.1, use_brain_mask=Fa
         from fedml_api.data_preprocessing.exp1_heart.data_loader_asdgan import TestDataset
         h5_test = os.path.join(args.data_dir, 'all_train_2d_iso_original_size.h5')  # including miccai2008_train_2d_iso, whs_ct_train_2d_iso, asoca_train_2d_iso
         print(h5_test)
-        transforms_test = ["CropPadding", "ToTensorScale", "Normalize"]
+        transforms_test = ["CropPadding", "ToTensorScale", "NormalizeBoth"]
         transforms_args_test = {
-            "CropPadding": [256],
-            "ToTensorScale": ['float', 1.0, 7.0],
-            "Normalize": [0.5, 0.5]
+            "CropPadding": [args.crop_size],
+            "ToTensorScale": ['float', 1.0, 10.0],
+            "NormalizeBoth": [0.5, 0.5]
         }
         transform_test = init_transform(transforms_test, transforms_args_test)
 
@@ -184,10 +190,11 @@ def save_data(A, B, fake_B, labels_ternary, weight_map, key, file, dataset, news
     # label = float_to_uint_img(label, newsize, 0)
 
     if 'brats' in dataset:
-        # restore labels, 0~1 -> 0~5 (skull label 5)
-        label = np.round(label * 5)
+        # restore labels, 0~1 -> 0~4 (skull label <1)
+        label = (label + 1) / 2
+        label[label < 1 / 4] = 0
+        label = np.round(label * 4)
 
-        label = label.astype("uint8")
         if len(label.shape) == 3:
             label = label[0]
         if newsize:
@@ -208,23 +215,24 @@ def save_data(A, B, fake_B, labels_ternary, weight_map, key, file, dataset, news
             gt[gt==5] = 0
 
         save_type = "train"
-        file.create_dataset(f"{save_type}/{key}/data", data=syn_img.astype("uint8"))
-        file.create_dataset(f"{save_type}/{key}/label", data=gt.astype("uint8"))
+        file.create_dataset(f"{save_type}/{key}/data", data=syn_img.astype("uint8"), compression="gzip")
+        file.create_dataset(f"{save_type}/{key}/label", data=gt.astype("uint8"), compression="gzip")
         # file.create_dataset(f"{save_type}/{key}/labels_with_skull", data=label)
         # file.create_dataset(f"{save_type}/{key}/reference_real_image_please_dont_use", data=real_img)
     elif 'path' in dataset:
-        file.create_dataset(f"images/{key}", data=np.moveaxis(syn_img, 0, -1).astype("uint8"))
-        file.create_dataset(f"labels_ternary/{key}", data=np.moveaxis(labels_ternary, 0, -1).astype("uint8"))
+        file.create_dataset(f"images/{key}", data=np.moveaxis(syn_img, 0, -1).astype("uint8"), compression="gzip")
+        file.create_dataset(f"labels_ternary/{key}", data=np.moveaxis(labels_ternary, 0, -1).astype("uint8"), compression="gzip")
         file.create_dataset(f"weight_maps/{key}", data=weight_map)
     elif 'heart' in dataset:
-        label = np.round(label * 7).astype("uint8")
+        label = (label + 1) / 2
+        label = np.round(label * 10).astype("uint8")
         if len(label.shape) == 3:
             label = label[0]
         if newsize:
             label = resize(label, newsize, order=0, preserve_range=True)
         save_type = "train"
-        file.create_dataset(f"{save_type}/{key}/data", data=syn_img.astype("uint8"))
-        file.create_dataset(f"{save_type}/{key}/label", data=label.astype("uint8"))
+        file.create_dataset(f"{save_type}/{key}/data", data=syn_img.astype("uint8"), compression="gzip")
+        file.create_dataset(f"{save_type}/{key}/label", data=label.astype("uint8"), compression="gzip")
 
 
 def plot_syn_brats(A, B, fake_B, key, save_dir, mod_names):
@@ -233,12 +241,18 @@ def plot_syn_brats(A, B, fake_B, key, save_dir, mod_names):
     num_c = 1 + 2 * nc
     ctr = 0
 
-    syn_img = float_to_uint_img(fake_B, (240, 240), 1)
+    syn_img = float_to_uint_img(fake_B, (240, 240), 1, -1, 1)
 
     label = A
     if len(label.shape) == 3:
         label = label[0]
-    label = float_to_uint_img(label, (240, 240), 0, 0, 1)
+    # label = float_to_uint_img(label, (240, 240), 0, 0, 1)
+    # label = float_to_uint_img(label, (240, 240), 0, -1, 1)
+    label = (label + 1) / 2
+    label[label < 1/4] = 0
+    label = np.round(label * 4)
+
+    label = resize(label, (240, 240), order=0, preserve_range=True)
 
     realdata = float_to_uint_img(B, (240, 240), 1, -1, 1)
 
@@ -357,8 +371,11 @@ def plot_syn_heart(A, B, fake_B, key, save_dir):
     if len(label.shape) == 3:
         label = label[0]
     # label = resize(label, (240, 240), order=0, preserve_range=True)
-    label = float_to_uint_img(label, None, 0, 0, 1)
-
+    # label = float_to_uint_img(label, None, 0, -1, 1)
+    # label = np.round(label.astype(np.float) * 10 / 255).astype("uint8")
+    label = (label + 1) / 2
+    label = np.round(label * 10).astype("uint8")
+    print(np.unique(label))
     realdata = float_to_uint_img(B, None, 1, -1, 1)
 
     if ctr == 0:
@@ -367,7 +384,7 @@ def plot_syn_heart(A, B, fake_B, key, save_dir):
 
     ctr += 1
     plt.subplot(num_r, num_c, ctr)
-    plt.imshow(label)
+    plt.imshow(label, cmap='tab10')
     if showtitle:
         plt.title("Label")
     plt.axis('off')
@@ -452,13 +469,13 @@ if __name__ == '__main__':
     if not os.path.isdir(save_dir):
         os.makedirs(save_dir)
 
-    syn_round = 1
+    # args.syn_round = 1
     if args.save_data:
         file = h5py.File(os.path.join(web_dir, f"{folder_name}.h5"), 'w')
 
     print(len(dataloader))
 
-    for si in range(syn_round):
+    for si in range(args.syn_round):
         for i, data in enumerate(dataloader):
             if 0 < args.num_test <= i:  # only apply our model to opt.num_test images if args.num_test > 0.
                 break
@@ -476,7 +493,7 @@ if __name__ == '__main__':
             for j in range(img.shape[0]):
                 if args.save_data:
                     if 'brats' in args.dataset:
-                        save_data(A[j], img[j], syn_img[j], None, None, data['key'][j], file, args.dataset, (240, 240), args.brain_mask_input==1)
+                        save_data(A[j], img[j], syn_img[j], None, None, data['key'][j], file, args.dataset, use_brain_mask=args.brain_mask_input==1) #newsize=(240, 240),
                     elif 'path' in args.dataset:
                         save_data(A[j], img[j], syn_img[j], labels_ternary[j], weight_maps[j], data['key'][j]+'_%i'%si, file, args.dataset)
                     elif 'heart' in args.dataset:

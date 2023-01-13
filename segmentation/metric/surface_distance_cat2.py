@@ -1,5 +1,4 @@
 
-import surface_distance
 
 from metric.surface_distance_avg import surface_distance_calc
 

@@ -27,13 +27,12 @@ class Normalize(object):
                 self.val_mean = self.mean
                 self.val_std = self.std
 
-        print(f"mean:{self.mean},std:{self.std},val_mean:{self.val_mean},val_std:{self.val_std}")
         self.training = training
 
     def __call__(self, sample):
         image, mask, misc = sample['image'], sample['mask'], sample['misc']
 
-        if "train" in misc['img_path'] :
+        if "train" in misc['img_path']:
             mean = self.mean
             std = self.std
         else:

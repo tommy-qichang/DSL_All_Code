@@ -4,8 +4,8 @@ import torch.utils.data as data
 import numpy as np
 import h5py
 import os
-
-from .data_utility import init_transform, count_samples, build_pairs
+from skimage.transform import resize
+from .data_utility import init_transform, count_samples, mr_normalization, merge_brain_mask_brats, merge_skull_brats
 
 
 logging.basicConfig()
@@ -19,14 +19,14 @@ def get_transforms():
         "Resize": [286],
         "RandomCrop": [256],
         "RandomFlip": [True, True],
-        "ToTensorScale": ['float', 255, 5],
+        "ToTensorScale": ['float', 255, 255],
         "Normalize": [0.5, 0.5]
     }
 
     transforms_test = ["Resize", "ToTensorScale", "Normalize"]
     transforms_args_test = {
         "Resize": [256],
-        "ToTensorScale": ['float', 255, 5],
+        "ToTensorScale": ['float', 255, 255],
         "Normalize": [0.5, 0.5]
     }
 
@@ -51,7 +51,7 @@ def get_dataloader(h5_train, h5_test, train_bs, test_bs, channel=None, channel_i
                                  channel=channel,
                                  channel_in=channel_in,
                                  path="train",
-                                 sample_rate=0.01,
+                                 sample_rate=0.001,
                                  transforms=transform_test)
         test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=False, pin_memory=True)
     else:
@@ -145,8 +145,8 @@ class GeneralDataset(data.Dataset):
         h5_file.close()
 
     def __getitem__(self, index):
-        if self.channel_in == 3:
-            A = np.repeat(self.label[index], 3, axis=0).astype("float32")
+        if self.channel_in > 1:
+            A = np.repeat(self.label[index], self.channel_in, axis=0).astype("float32")
         else:
             A = np.copy(self.label[index]).astype("float32")
         B = np.copy(self.dcm[index])
@@ -164,3 +164,64 @@ class GeneralDataset(data.Dataset):
 
     def __len__(self):
         return len(self.dcm)
+
+
+def build_pairs(dataset, channel=None, sample_rate=1, use_brain_mask=False, im_size=None):
+    keys = list(dataset.keys())
+    dcm_arr = []
+    label_arr = []
+    # seg_arr = []
+
+    if 1 > sample_rate >= 0.:
+        sample_size = max(1, int(len(keys) * sample_rate))
+        sample_idx = np.random.choice(len(keys), sample_size, replace=False)
+        keys = [keys[i] for i in sample_idx]
+
+    for key in keys:
+        dcm = dataset[f"{key}/data"][()]
+        label = dataset[f"{key}/label"][()]
+
+        if channel is None:
+            ## normalize per channel (T1/T1c/T2/Flair)
+            for i in range(dcm.shape[0]):
+                dcm[i] = mr_normalization(dcm[i])
+                dcm[i] = dcm[i] * (255 / (dcm[i].max() + 1e-8))
+        else:
+            if type(channel) is int:
+                dcm = mr_normalization(dcm[channel])
+                dcm = dcm[np.newaxis, ...] * (255 / (dcm.max() + 1e-8))
+            elif type(channel) is list:
+                dcm_new = np.zeros([len(channel)]+list(dcm.shape[1:]))
+                for i, ch in enumerate(channel):
+                    dcm_new[i] = mr_normalization(dcm[ch])
+                    dcm_new[i] = dcm_new[i] * (255 / (dcm_new[i].max() + 1e-8))
+                dcm = dcm_new
+            else:
+                assert(type(channel) is int)
+
+        # If different modality has different signal region, the multi-channel label may be inconsistent. use the first-channel dcm only.
+        if use_brain_mask:
+            label = merge_brain_mask_brats((dcm[0]>0).astype('uint8'), label)
+        else:  # skull mask
+            label = merge_skull_brats((dcm[0]>0).astype('uint8'), label, default_skull_value=5)
+
+        if not np.any(label>0):
+            continue
+
+        label = np.round(label[np.newaxis, ...])  # label[np.newaxis, ...]
+
+        if im_size is not None:
+            dcm = np.moveaxis(dcm, 0, -1)
+            label = np.moveaxis(label, 0, -1)
+
+            dcm = resize(dcm, im_size, order=1, preserve_range=True)
+            label = resize(label, im_size, order=0, preserve_range=True)
+
+            dcm = np.moveaxis(dcm, -1, 0)
+            label = np.moveaxis(label, -1, 0)
+
+        dcm_arr.append(dcm)
+        label_arr.append(label.astype("uint8"))
+        # seg_arr.append(seg_label)
+
+    return dcm_arr, label_arr, keys

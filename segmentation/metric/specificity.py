@@ -1,5 +1,5 @@
-import torch
-from imblearn.metrics import specificity_score
+# import torch
+# from imblearn.metrics import specificity_score
 
 
 def specificity(output, target, misc):

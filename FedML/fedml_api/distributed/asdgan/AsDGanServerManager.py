@@ -35,6 +35,8 @@ class AsDGanServerManager(ServerManager):
             self.send_message_init_config(client_id+1, client_id)
 
     def register_message_receive_handlers(self):
+        self.register_message_receive_handler(MyMessage.MSG_TYPE_C2S_SEND_STATS_TO_SERVER,
+                                              self.handle_message_receive_stats_from_client)
         self.register_message_receive_handler(MyMessage.MSG_TYPE_C2S_SEND_LABEL_TO_SERVER,
                                               self.handle_message_receive_label_from_client)
         self.register_message_receive_handler(MyMessage.MSG_TYPE_C2S_SEND_GRAD_TO_SERVER,
@@ -70,6 +72,15 @@ class AsDGanServerManager(ServerManager):
 
             for client_id, data in forward_data.items():
                 self.send_message_fake_sample_to_client(client_id + 1, data, client_id, n_rest_iter)
+
+    def handle_message_receive_stats_from_client(self, msg_params):
+        sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
+        mu = msg_params.get(MyMessage.MSG_ARG_KEY_DATA_MU)
+        sigma = msg_params.get(MyMessage.MSG_ARG_KEY_DATA_SIGMA)
+
+        logging.info('[Server] Received data statistics from client {0}'.format(sender_id - 1))
+
+        self.aggregator.add_client_data_stats(sender_id - 1, mu, sigma)
 
     def handle_message_receive_label_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)

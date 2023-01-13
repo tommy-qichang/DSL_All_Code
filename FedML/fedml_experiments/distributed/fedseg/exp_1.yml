@@ -8,7 +8,7 @@ outstride: 1
 
 checkname: 'unet'
 dataset: 'heart'
-data_dir: "/data/datasets/FSL"
+data_dir: "../../../../datasets/cardiac"
 partition_method: 'hetero'
 partition_alpha: 0.5
 client_num_in_total: 3

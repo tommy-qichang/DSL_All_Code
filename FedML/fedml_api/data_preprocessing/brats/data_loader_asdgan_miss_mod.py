@@ -21,23 +21,23 @@ def get_transforms_G():
         "RandomFlip": [True, True]
     }
 
-    transforms_test = ["Resize", "ToTensorScale", "Normalize"]
+    transforms_test = ["Resize", "ToTensorScale", "NormalizeBoth"]
     transforms_args_test = {
         "Resize": [256],
-        "ToTensorScale": ['float', 255, 5],
-        "Normalize": [0.5, 0.5]  # only normalize image
+        "ToTensorScale": ['float', 255, 255],
+        "NormalizeBoth": [0.5, 0.5]
     }
 
     return init_transform(transforms_train, transforms_args_train), init_transform(transforms_test, transforms_args_test)
 
 
 def get_transforms_D():
-    transforms_train = ["RandomCrop", "RandomFlip", "ToTensorScale", "Normalize"]
+    transforms_train = ["RandomCrop", "RandomFlip", "ToTensorScale", "NormalizeBoth"]
     transforms_args_train = {
         "RandomCrop": [256],
         "RandomFlip": [True, True],
-        "ToTensorScale": ['float', 255, 5],
-        "Normalize": [0.5, 0.5]  # only normalize image
+        "ToTensorScale": ['float', 255, 255],
+        "NormalizeBoth": [0.5, 0.5]
     }
 
     return init_transform(transforms_train, transforms_args_train), None
@@ -57,7 +57,7 @@ def get_dataloader_G(h5_train, h5_test, train_bs, test_bs, sample_method, channe
                               channel=channel,
                               channel_in=channel_in,
                               path="train",
-                              sample_rate=0.01,
+                              sample_rate=0.001,
                               transforms=transform_test,
                               use_brain_mask=use_brain_mask)
         test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=False, num_workers=1, pin_memory=True)
@@ -96,9 +96,9 @@ def partition_data(datadir, partition, n_clients):
 
     # non-iid data distribution
     elif partition == "hetero":
-        data_dict[0] = os.path.join(datadir, 'General_format_BraTS18_train_three_center_0_2d_4ch.h5')
-        data_dict[1] = os.path.join(datadir, 'General_format_BraTS18_train_three_center_1_2d_4ch.h5')
-        data_dict[2] = os.path.join(datadir, 'General_format_BraTS18_train_three_center_2_2d_4ch.h5')
+        data_dict[0] = os.path.join(datadir, 'General_format_BraTS18_train_three_center_0_2d_4ch.h5')  # other
+        data_dict[1] = os.path.join(datadir, 'General_format_BraTS18_train_three_center_1_2d_4ch.h5')  # CBICA
+        data_dict[2] = os.path.join(datadir, 'General_format_BraTS18_train_three_center_2_2d_4ch.h5')  # TCIA
 
     return data_dict
 
@@ -132,11 +132,11 @@ def load_partition_data_distributed_brats_mm(process_id, dataset, data_dir, part
         # get local dataset
         client_id = process_id - 1
         # ['T1', 'T2', 'Flair', 'T1c']
-        if client_id == 0:
+        if client_id == 0:  # other
             channel = [0, 2, 3]
-        elif client_id == 1:
+        elif client_id == 1: # cbica
             channel = [0, 1, 3]
-        elif client_id == 2:
+        elif client_id == 2: # tcia
             channel = [0, 1, 2]
         else:
             channel = None
@@ -249,6 +249,8 @@ class DatasetG(data.Dataset):
             noise_u = np.random.normal(0, label_brain/3, As.shape)
             noise_u[noise_u > label_brain*2/3] = label_brain*2/3
             As[As==label_brain] = As[As==label_brain] + noise_u[As==label_brain]
+
+        As = (As - 0.5) / 0.5
 
         if self.channel_in > As.shape[1]:
             As = np.repeat(As, self.channel_in, axis=1)

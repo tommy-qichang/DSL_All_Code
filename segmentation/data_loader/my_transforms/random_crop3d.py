@@ -51,6 +51,9 @@ class RandomCrop3d:
             mask = mask[:, top: top + new_h, left: left + new_w, depth: depth + new_d]
 
         if self.padding != (0, 0, 0):
+            image = image[self.padding[0]:(image.shape[0] - self.padding[0]),
+                   self.padding[1]:(image.shape[1] - self.padding[1]),
+                   self.padding[2]:(image.shape[2] - self.padding[2])]
             mask = mask[self.padding[0]:(mask.shape[0] - self.padding[0]),
                    self.padding[1]:(mask.shape[1] - self.padding[1]),
                    self.padding[2]:(mask.shape[2] - self.padding[2])]

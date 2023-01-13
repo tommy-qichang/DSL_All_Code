@@ -41,6 +41,8 @@ def normalize_common(image, mean, std, inplace=False):
 
     if not inplace:
         image_clone = image.clone()
+    else:
+        image_clone = image
     image_clone = image_clone.flatten(1)
     dtype = image_clone.dtype
     mean = torch.as_tensor(mean, dtype=dtype, device=image_clone.device)

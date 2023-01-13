@@ -4,9 +4,9 @@ http://doc.fedml.ai/#/installation-distributed-computing
 ## Run Experiments
 
 ## BRATS generation experiments
-3 clients training, T2 data, 50 rounds, 2 epochs per round, batch size 10:
+3 clients training, multi-modality data, 200 rounds, 1 epoch per round:
 ```
-nohup sh run_fedgan_distributed_pytorch.sh 5 exp_2.yml
+sh run_fedgan_distributed_pytorch.sh 4 exp_4.yml
 ```
 
 

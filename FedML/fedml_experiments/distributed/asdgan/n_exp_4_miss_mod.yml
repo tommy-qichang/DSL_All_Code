@@ -2,7 +2,7 @@
 model: 'asdgan_mc_mm'
 checkname: 'asdgan_mc_mm'
 dataset: 'brats_mm'
-data_dir: "/data/qichang/federated_synthetic_learning_nature/exp4_modality_complete"
+data_dir: "../../../../datasets/brats"
 partition_method: 'hetero'
 client_num_in_total: 3
 client_num_per_round: 3
@@ -23,7 +23,7 @@ nesterov: false
 epochs: 200
 evaluation_frequency: 5
 dl_num_workers: 0
-input_nc: 3
+input_nc: 4
 output_nc: 4
 ngf: 64
 ndf: 64
@@ -36,7 +36,7 @@ init_type: 'normal'
 init_gain: 0.02
 no_dropout: false
 
-lambda_L1: 100
+lambda_L1: 150
 lambda_perceptual: 1
 lambda_G: 1
 lambda_D: 0.5

@@ -8,7 +8,7 @@ outstride: 1
 
 checkname: 'unet'
 dataset: 'brats'
-data_dir: "/data/datasets/asdgan_data/fedseg_data/exp4_brats"
+data_dir: "../../../../datasets/brats"
 partition_method: 'hetero'
 partition_alpha: 0.5
 client_num_in_total: 3

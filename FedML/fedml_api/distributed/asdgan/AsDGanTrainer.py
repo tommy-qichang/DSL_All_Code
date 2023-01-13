@@ -34,6 +34,10 @@ class AsDGanTrainer(object):
         keys, labels = self.train_dataset_local.collect_label()
         return keys, labels
 
+    def upload_statistics(self):
+        mu, sigma = self.train_dataset_local.get_data_statistics(device=self.device, num_workers=1)
+        return mu, sigma
+
     def train(self, key_samples, fake_samples, trans_paras):
         data_batch, label_batch = self.train_dataset_local.get_data(key_samples, trans_paras)
 

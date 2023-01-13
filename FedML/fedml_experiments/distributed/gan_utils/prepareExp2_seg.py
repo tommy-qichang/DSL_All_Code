@@ -53,9 +53,9 @@ val_ids = ['Breast_TCGA-A7-A13E-01Z-00-DX1_3',
 
 
 
-train_all = "/data/datasets/asdgan_data/asdgan_syn/path_h5_all_gen_from_286_random_crop/path_resnet_9blocks_epoch150_experiment_0_2x.h5"
-train_h5 = "/data/datasets/asdgan_data/asdgan_syn/path_h5_all_gen_from_286_random_crop/path_resnet_9blocks_epoch150_experiment_0_2x_trainset.h5"
-val_h5 = "/data/datasets/asdgan_data/asdgan_syn/path_h5_all_gen_from_286_random_crop/path_resnet_9blocks_epoch150_experiment_0_2x_valset.h5"
+train_all = "../../../../datasets/asdgan_syn/path_h5_all/path_resnet_9blocks_epoch150_experiment_0_2x.h5"
+train_h5 = "../../../../datasets/asdgan_seg_data_path/path_resnet_9blocks_epoch150_experiment_0_2x_trainset.h5"
+val_h5 = "../../../../datasets/asdgan_seg_data_path/path_resnet_9blocks_epoch150_experiment_0_2x_valset.h5"
 
 
 hfile = h5py.File(train_all, 'r')

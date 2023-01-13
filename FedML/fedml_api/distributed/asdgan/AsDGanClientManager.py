@@ -44,9 +44,14 @@ class AsDGanClientManager(ClientManager):
         self.trainer.update_dataset(int(client_index))
 
         self.epoch_idx = 0
+
+        mu, sigma = self.trainer.upload_statistics()
+        self.send_stats_to_server(0, mu, sigma)
+
         keys, labels = self.trainer.upload_labels()
         # logging.info('[Client {0}] labels: size {1} and type {2}'.format(client_index, len(labels), labels[0].dtype))
         self.send_label_to_server(0, keys, labels)
+
 
     def handle_message_receive_fake_data_from_server(self, msg_params):
         key_samples = msg_params.get(MyMessage.MSG_ARG_KEY_KEY_SAMPLES)
@@ -63,6 +68,12 @@ class AsDGanClientManager(ClientManager):
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
         logging.info('[Client {0}] Received stop signal from server'.format(client_index))
         self.finish()
+
+    def send_stats_to_server(self, receive_id, mu, sigma):
+        message = Message(MyMessage.MSG_TYPE_C2S_SEND_STATS_TO_SERVER, self.get_sender_id(), receive_id)
+        message.add_params(MyMessage.MSG_ARG_KEY_DATA_MU, mu)
+        message.add_params(MyMessage.MSG_ARG_KEY_DATA_SIGMA, sigma)
+        self.send_message(message)
 
     def send_label_to_server(self, receive_id, keys, labels):
         message = Message(MyMessage.MSG_TYPE_C2S_SEND_LABEL_TO_SERVER, self.get_sender_id(), receive_id)

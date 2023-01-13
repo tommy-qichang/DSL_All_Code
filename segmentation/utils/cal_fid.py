@@ -22,12 +22,11 @@ def calculate_fid_from_h5(real_h5,fake_h5_list, lv1_name="train", tmp_folder="./
     print(f"tmp folder:{tmp_folder}")
     real_path = os.path.join(tmp_folder,"real")
     fake_path = os.path.join(tmp_folder,"fake")
+
     if os.path.isdir(real_path):
         rmtree(real_path, ignore_errors=True)
-    if os.path.isdir(fake_path):
-        rmtree(fake_path, ignore_errors=True)
     os.makedirs(real_path, exist_ok=True)
-    os.makedirs(fake_path,exist_ok=True)
+
     if not oldformat:
         level_append = "/data"
     else:
@@ -69,6 +68,10 @@ def calculate_fid_from_h5(real_h5,fake_h5_list, lv1_name="train", tmp_folder="./
                         im_ch.save(os.path.join(real_path, str(idx)+"_"+real_key+"_"+str(ch)+".png"))
 
     for fake_h5 in fake_h5_list:
+        if os.path.isdir(fake_path):
+            rmtree(fake_path, ignore_errors=True)
+        os.makedirs(fake_path, exist_ok=True)
+
         fakeh5 = h5py.File(fake_h5, 'r')
         fake_keys = list(fakeh5[lv1_name].keys())
         print(f"start save fake images from {fake_h5}({len(fake_keys)})...")
@@ -86,7 +89,7 @@ def calculate_fid_from_h5(real_h5,fake_h5_list, lv1_name="train", tmp_folder="./
                     if data.shape[0]==3:
                         data = np.moveaxis(data,0,-1)
                     im = PIL.Image.fromarray(data).convert("RGB").resize((256,256))
-                    im.save(os.path.join(fake_path, str(idx)+"_"+real_key+".png"))
+                    im.save(os.path.join(fake_path, str(idx)+"_"+fake_key+".png"))
                 else:
                     if idx == 0 and fake_h5_ch == -1:
                         print(f"fake img shape is:{data.shape}, save multiple channels")
@@ -95,12 +98,12 @@ def calculate_fid_from_h5(real_h5,fake_h5_list, lv1_name="train", tmp_folder="./
                     if fake_h5_ch >= 0:
                         data[fake_h5_ch] = adjust_dynamic_range(data[fake_h5_ch], [data[fake_h5_ch].min(),data[fake_h5_ch].max()],[0,255]).astype("uint8")
                         im_ch = PIL.Image.fromarray(data[fake_h5_ch]).convert("RGB").resize((256,256))
-                        im_ch.save(os.path.join(fake_path, str(idx)+"_"+real_key+"_"+str(fake_h5_ch)+".png"))
+                        im_ch.save(os.path.join(fake_path, str(idx)+"_"+fake_key+"_"+str(fake_h5_ch)+".png"))
                     else:
                         for ch in range(data.shape[0]):
                             data[ch] = adjust_dynamic_range(data[ch], [data[ch].min(),data[ch].max()],[0,255]).astype("uint8")
                             im_ch = PIL.Image.fromarray(data[ch]).convert("RGB").resize((256,256))
-                            im_ch.save(os.path.join(fake_path, str(idx)+"_"+real_key+"_"+str(ch)+".png"))
+                            im_ch.save(os.path.join(fake_path, str(idx)+"_"+fake_key+"_"+str(ch)+".png"))
 
         print(f"start calculate FID -- file:{fake_h5}")
         result = fid_score.calculate_fid_given_paths([str(real_path), str(fake_path)], 256, 0, 2048)
@@ -139,5 +142,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    calculate_fid_from_h5(args.real_h5, args.fake_h5, lv1_name=args.lv1_name, oldformat=args.oldformat, fake_h5_ch=args.fake_h5_ch)
+    calculate_fid_from_h5(args.real_h5, args.fake_h5, lv1_name=args.lv1_name, oldformat=args.oldformat, fake_h5_ch=args.fake_h5_ch, isrgb=args.isrgb)
 

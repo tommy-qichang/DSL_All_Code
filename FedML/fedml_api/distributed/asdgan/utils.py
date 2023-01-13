@@ -1,12 +1,12 @@
 import os
 import shutil
 import glob
-import collections
-import random
+# import collections
+# import random
 import pickle
-import logging
+# import logging
 from skimage.transform import resize
-from collections import OrderedDict
+# from collections import OrderedDict
 
 import numpy as np 
 import torch
@@ -107,14 +107,12 @@ class Saver(object):
 
         log_file.close()
 
+    def save_data_stats(self, filename, mu, sigma, count):
+        stat_file = os.path.join(self.experiment_dir, filename)
+        np.savez_compressed(stat_file, mu=mu, sigma=sigma, count=count)
+
 
 def float_to_uint_img(img, new_size=None, order=1, minv=None, maxv=None):
-    if new_size:
-        if len(img.shape) == 3:
-            img = np.moveaxis(img, 0, -1)
-        img = resize(img, new_size, order=order, preserve_range=True)
-        if len(img.shape) == 3:
-            img = np.moveaxis(img, -1, 0)
 
     if minv is None:
         minv = img.min()
@@ -123,6 +121,14 @@ def float_to_uint_img(img, new_size=None, order=1, minv=None, maxv=None):
     img = (img - minv) * (255 / (maxv - minv))
     img[img > 255] = 255
     img[img < 0] = 0
+
+    if new_size:
+        if len(img.shape) == 3:
+            img = np.moveaxis(img, 0, -1)
+        img = resize(img, new_size, order=order, preserve_range=True)
+        if len(img.shape) == 3:
+            img = np.moveaxis(img, -1, 0)
+
     img = np.round(img).astype("uint8")
 
     return img

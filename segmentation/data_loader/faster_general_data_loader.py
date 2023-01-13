@@ -131,9 +131,10 @@ class FasterGeneralDataLoader(DataLoader):
         if hasattr(self, 'valid_sampler'):
             return DataLoader(sampler=self.valid_sampler, **self.init_kwargs)
         elif hasattr(self, 'valid_dataset'):
-            val_init_kwargs = self.init_kwargs
+            val_init_kwargs = self.init_kwargs.copy()
             val_init_kwargs['dataset'] = self.valid_dataset
-            return DataLoader(**self.init_kwargs)
+            val_init_kwargs["shuffle"] = False
+            return DataLoader(**val_init_kwargs)  #(**self.init_kwargs)
 
 
 class GeneralDataset(data.Dataset):

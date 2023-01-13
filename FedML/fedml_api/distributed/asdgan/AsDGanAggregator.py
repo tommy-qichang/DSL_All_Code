@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from .utils import Saver, EvaluationMetricsKeeper
+from fedml_api.Dist_FID.fid_score import get_activations, calculate_frechet_distance
 
 
 class AsDGanAggregator(object):
@@ -24,6 +25,7 @@ class AsDGanAggregator(object):
         self.test_data_global = test_data_global
         self.model_dict = dict()
         self.sample_num_dict = dict()
+        self.client_data_stats = dict()
         self.flag_client_grad_uploaded_dict = dict()
         self.flag_client_label_uploaded_dict = dict()
 
@@ -65,7 +67,7 @@ class AsDGanAggregator(object):
         self.sample_client_indexes = []
         self.grad_dict = dict()
         self.finished = False
-
+        self.total_sample_num = 0
         logging.info('[Server] Initializing FedGanAggregator with workers: {0}'.format(worker_num))
 
     def get_global_model_params(self):
@@ -73,6 +75,9 @@ class AsDGanAggregator(object):
 
     def set_global_model_params(self, model_parameters):
         self.trainer.set_model_params(model_parameters)
+
+    def add_client_data_stats(self, client_id, mu, sigma):
+        self.client_data_stats[client_id] = (mu, sigma)
 
     def add_client_label_data(self, client_id, label_data, key_data):
         self.train_data_global.add_client_labels(client_id, label_data, key_data)
@@ -98,12 +103,21 @@ class AsDGanAggregator(object):
         self.n_iter_epoch = len(self.train_dataloader)
         self.n_iter_display = min(int(self.n_iter_epoch / 2 + 0.5), self.n_iter_display)
 
+        self.total_sample_num = 0
+        for idx in range(self.worker_num):
+            self.total_sample_num += self.sample_num_dict[idx]
+            filename = "client_{0}_data_stats.npz".format(idx)
+            self.saver.save_data_stats(filename, mu=self.client_data_stats[idx][0], sigma=self.client_data_stats[idx][1], count=self.sample_num_dict[idx])
+        # logging.info("[aggregator] training_num: {}".format(self.total_sample_num))  # path: 256, heart: 11241, brats: 11349
+
     def forward_G(self):
         if (self.batch_idx+1) % self.n_iter_display == 0:
             t = time.localtime()
             current_time = time.strftime("%H:%M:%S", t)
             logging.info("[Server] Train at epoch {0}: {1} / {2}. {3}".format(self.epoch_idx, self.batch_idx, self.n_iter_epoch, current_time))
-        batch = next(iter(self.train_dataloader))
+        if self.batch_idx == 0:
+            self.train_dataloader_iter = iter(self.train_dataloader)
+        batch = next(self.train_dataloader_iter)
         client_ids, A, key_ids, trans_para = batch
         # logging.info('[Server] forward_G client_ids: {0}, A: {1}, keys: {2}'.format(client_ids.size(), A.size(), key_ids.size()))
         asize = A.size()
@@ -132,11 +146,21 @@ class AsDGanAggregator(object):
 
     def backward_G(self, sample_idx_dict):
         grad_fake_B_list = []
-        training_num = 0
         sample_idx = []
+
         for idx in self.sample_client_indexes:
-            grad_fake_B_list.append((self.sample_num_dict[idx], self.grad_dict[idx]))
-            training_num += self.sample_num_dict[idx]
+            #####
+            ## differential privacy: clipping threshold (self.args.dp_C) and noise level (self.args.dp_sigma)
+            local_grad = self.grad_dict[idx]
+            if self.args.dp_C is not None and self.args.dp_C > 0:
+                grad_norm = np.linalg.norm(local_grad.reshape((local_grad.shape[0], -1)), axis=1)
+                # logging.info("[aggregator] client {} norm {}".format(idx, grad_norm))
+                grad_norm = np.maximum(1, grad_norm / self.args.dp_C).reshape([local_grad.shape[0]]+[1,]*(len(local_grad.shape)-1))
+                local_grad = local_grad / grad_norm
+                if self.args.dp_sigma is not None and self.args.dp_sigma > 0:
+                    local_grad += np.random.normal(0, self.args.dp_sigma * self.args.dp_C, local_grad.shape) / (self.total_sample_num/100)
+            #####
+            grad_fake_B_list.append((self.sample_num_dict[idx], local_grad))
             sample_idx.append(sample_idx_dict[idx])
 
         # logging.info("[Server] Aggregating grads...... {0}, {1}".format(len(self.grad_dict), len(grad_fake_B_list)))
@@ -145,7 +169,7 @@ class AsDGanAggregator(object):
         for i in range(0, len(grad_fake_B_list)):
             local_sample_number, local_grad = grad_fake_B_list[i]
             if self.args.sample_method == 'balance':
-                w = local_sample_number / training_num
+                w = local_sample_number / self.total_sample_num
             else:
                 w = 1.0
             grad_fake_B[sample_idx[i]] = local_grad * w
@@ -165,7 +189,7 @@ class AsDGanAggregator(object):
     def add_local_grad(self, index, grad_fake_B, model):
         # logging.info("[Server] Add grad index: {}".format(index))
         self.grad_dict[index] = grad_fake_B
-        self.model_dict[index] = model
+        self.model_dict[index] = model  # receive clients' D model for save only
         self.flag_client_grad_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
@@ -247,26 +271,48 @@ class AsDGanAggregator(object):
             self.train_loss_G_perceptual_client_dict = dict()
             self.train_batch_iter_cnt = dict()
 
+            ## if test_data_global is not too large, compute dist_fid online
+            # if self.test_data_global:
+            #     all_synthetic_img = self.trainer.infer_test(self.test_data_global, self.device)
+            #
+            #     act = get_activations(all_synthetic_img, batch_size=50, device=self.device, isrgb=(self.args.dataset.lower() == 'path'))
+            #     mu2 = np.mean(act, axis=0)
+            #     sigma2 = np.cov(act, rowvar=False)
+            #     dist_fid = 0
+            #     for client_idx in range(self.worker_num):
+            #         m1, s1 = self.client_data_stats[client_idx]
+            #         weight = self.sample_num_dict[client_idx] / self.total_sample_num
+            #         fid_client = weight * calculate_frechet_distance(m1, s1, mu2, sigma2)
+            #         dist_fid += fid_client
+            # else:
+            #     dist_fid = 1000
+
             # Train Logs
-            wandb.log({"Train/Loss_G": train_loss_G, "round": round_idx})
-            wandb.log({"Train/Loss_D": train_loss_D, "round": round_idx})
-            wandb.log({"Train/Loss_D_fake": train_loss_D_fake, "round": round_idx})
-            wandb.log({"Train/Loss_D_real": train_loss_D_real, "round": round_idx})
-            wandb.log({"Train/Loss_G_GAN": train_loss_G_GAN, "round": round_idx})
-            wandb.log({"Train/Loss_G_L1": train_loss_G_L1, "round": round_idx})
-            wandb.log({"Train/Loss_G_perceptual": train_loss_G_perceptual, "round": round_idx})
+            wandb.log({"round": round_idx,
+                       "Train/Loss_G": train_loss_G,
+                       "Train/Loss_G_GAN": train_loss_G_GAN,
+                       "Train/Loss_G_L1": train_loss_G_L1,
+                       "Train/Loss_G_perceptual": train_loss_G_perceptual,
+                       "Train/Loss_D": train_loss_D,
+                       "Train/Loss_D_fake": train_loss_D_fake,
+                       "Train/Loss_D_real": train_loss_D_real,
+                       # "Train/Dist_FID": dist_fid,
+                       })
+
             stats_train = {'LossG': train_loss_G,
                            'LossD': train_loss_D,
                            'LossD_fake': train_loss_D_fake,
                            'LossD_real': train_loss_D_real,
                            'LossG_GAN': train_loss_G_GAN,
                            'LossG_L1': train_loss_G_L1,
-                           'LossG_perceptual': train_loss_G_perceptual}
+                           'LossG_perceptual': train_loss_G_perceptual,
+                           # 'Dist_FID': dist_fid
+                           }
             logging.info("[Server] Training statistics: {}".format(stats_train))
 
             logging.info('[Server] Saving G Model Checkpoint')
             filename = "G_aggregated_checkpoint_ep%d.pth.tar" % (round_idx + 1)
-            saver_state = {'best_lossG': train_loss_G, 'round': round_idx + 1, 'state_dict': self.trainer.model.get_weights(),
+            saver_state = {'best_lossG': train_loss_G, 'round': round_idx + 1, 'state_dict': self.trainer.model.get_weights(), #'dist_fid': dist_fid,
                            'train_data_evaluation_metrics': stats_train}
             self.saver.save_checkpoint(saver_state, False, filename)
 

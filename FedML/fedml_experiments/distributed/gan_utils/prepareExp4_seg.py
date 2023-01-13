@@ -3,9 +3,9 @@ import h5py
 import numpy as np
 
 
-train_all = "/data/datasets/asdgan_data/fedgan_syn/brats_h5_all/brats_resnet_9blocks_epoch160_experiment_0.h5"
-train_h5 = "/data/datasets/asdgan_data/fedgan_seg_data_brats/brats_resnet_9blocks_epoch160_experiment_0_trainset.h5"
-val_h5 = "/data/datasets/asdgan_data/fedgan_seg_data_brats/brats_resnet_9blocks_epoch160_experiment_0_valset.h5"
+train_all = "../../../../datasets/fedgan_syn/brats_h5_all/brats_resnet_9blocks_epoch160_experiment_0.h5"
+train_h5 = "../../../../datasets/fedgan_seg_data_brats/brats_resnet_9blocks_epoch160_experiment_0_trainset.h5"
+val_h5 = "../../../../datasets/fedgan_seg_data_brats/brats_resnet_9blocks_epoch160_experiment_0_valset.h5"
 
 val_ids_other = {'Brats18_2013_11_1', 'Brats18_2013_18_1', 'Brats18_2013_5_1'}
 

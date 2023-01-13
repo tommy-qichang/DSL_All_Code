@@ -1,4 +1,4 @@
-echo "Downloading Cardiac dataset into DSL and FedML"
+echo "Downloading Cardiac dataset into FedD-GAN and FedML"
 
 TARGET_DIR=./datasets/cardiac
 mkdir -p $TARGET_DIR

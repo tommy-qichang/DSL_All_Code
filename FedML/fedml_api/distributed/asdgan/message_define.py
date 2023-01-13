@@ -12,6 +12,7 @@ class MyMessage(object):
     MSG_TYPE_C2S_SEND_GRAD_TO_SERVER = 5
     MSG_TYPE_C2S_SEND_MODEL_TO_SERVER = 6
     MSG_TYPE_C2S_STOP = 7
+    MSG_TYPE_C2S_SEND_STATS_TO_SERVER = 8
 
     MSG_ARG_KEY_TYPE = "msg_type"
     MSG_ARG_KEY_SENDER = "sender"
@@ -29,6 +30,8 @@ class MyMessage(object):
     MSG_ARG_KEY_MODEL_PARAMS = "model_params"
     MSG_ARG_KEY_CLIENT_INDEX = "client_idx"
     MSG_ARG_KEY_EPOCH_INDEX = 'epoch_idx'
+    MSG_ARG_KEY_DATA_MU = 'data_mu'
+    MSG_ARG_KEY_DATA_SIGMA = 'data_sigma'
     MSG_ARG_KEY_TRAIN_EVALUATION_METRICS = "train_evaluation_metrics"
     MSG_ARG_KEY_TEST_EVALUATION_METRICS = "test_evaluation_metrics"
 

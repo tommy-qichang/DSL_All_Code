@@ -8,6 +8,7 @@ import os
 # from skimage.transform import resize
 
 from .data_utility import init_transform, count_samples, build_pairs
+from fedml_api.Dist_FID.fid_score import get_activations
 
 
 logging.basicConfig()
@@ -16,11 +17,11 @@ logger.setLevel(logging.INFO)
 
 
 def get_transforms_G():
-    # transforms_train = ["RandomCrop", "RandomFlip"]
-    # transforms_args_train = {
-    #     "RandomCrop": [256],
-    #     "RandomFlip": [True, True]
-    # }
+    transforms_train = ["RandomCrop", "RandomFlip"]
+    transforms_args_train = {
+        "RandomCrop": [256],
+        "RandomFlip": [True, True]
+    }
 
     transforms_test = ["CenterCrop", "ToTensorScale", "Normalize"]
     transforms_args_test = {
@@ -29,15 +30,15 @@ def get_transforms_G():
         "Normalize": [0.5, 0.5]  # only normalize image
     }
 
-    # return init_transform(transforms_train, transforms_args_train), init_transform(transforms_test, transforms_args_test)
-    return None, init_transform(transforms_test, transforms_args_test)
+    return init_transform(transforms_train, transforms_args_train), init_transform(transforms_test, transforms_args_test)
+    # return None, init_transform(transforms_test, transforms_args_test)  # for no augmentation
 
 
 def get_transforms_D():
-    transforms_train = ["ToTensorScale", "Normalize"]
+    transforms_train = ["RandomCrop", "RandomFlip", "ToTensorScale", "Normalize"]  #["ToTensorScale", "Normalize"]  #["RandomCrop", "RandomFlip", "ToTensorScale", "Normalize"] for augmentation
     transforms_args_train = {
-        # "RandomCrop": [256],
-        # "RandomFlip": [True, True],
+        "RandomCrop": [256],
+        "RandomFlip": [True, True],
         "ToTensorScale": ['float', 255, 255],
         "Normalize": [0.5, 0.5]  # only normalize image
     }
@@ -68,7 +69,7 @@ def get_dataloader_D(h5_train, h5_test, train_bs, test_bs, channel_in=1):
     transform_train, transform_test = get_transforms_D()
 
     train_ds = DatasetD(h5_train,
-                        im_size=(256, 256),  # None when random augmentation in transforms_G
+                        im_size=None,  # im_size=None when random augmentation in transforms_G; im_size=(256, 256) for no augmentation
                         channel_in=channel_in,
                         # sample_rate=0.1,  # debug
                         transforms=transform_train)
@@ -284,6 +285,27 @@ class DatasetD:
             label_batch.append(datapoint['mask'])
 
         return torch.stack(data_batch), torch.stack(label_batch)
+
+    def get_data_statistics(self, batch_size=50, device='cpu', num_workers=1):
+        """Calculation of the statistics used by the Dist-FID.
+            Params:
+            -- batch_size  : The images numpy array is split into batches with
+                             batch size batch_size. A reasonable batch size
+                             depends on the hardware.
+            -- device      : Device to run calculations
+            -- num_workers : Number of parallel dataloader workers
+
+            Returns:
+            -- mu    : The mean over samples of the activations of the pool_3 layer of
+                       the inception model.
+            -- sigma : The covariance matrix of the activations of the pool_3 layer of
+                       the inception model.
+            """
+
+        act = get_activations(self.dcm, isrgb=True, batch_size=batch_size, device=device, num_workers=num_workers)
+        mu = np.mean(act, axis=0)
+        sigma = np.cov(act, rowvar=False)
+        return mu, sigma
 
     def __len__(self):
         return len(self.dcm)

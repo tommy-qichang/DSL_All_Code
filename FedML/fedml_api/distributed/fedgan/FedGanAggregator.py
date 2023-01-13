@@ -1,12 +1,12 @@
 import matplotlib
 matplotlib.use('agg')
-import copy
+# import copy
 import logging
 import time
-import torch
+# import torch
 import wandb
 import numpy as np
-from torch import nn
+# from torch import nn
 import matplotlib.pyplot as plt
 
 from .utils import transform_list_to_tensor, Saver, EvaluationMetricsKeeper
@@ -205,13 +205,16 @@ class FedGanAggregator(object):
                                                 self.train_loss_G_perceptual_client_dict.keys()]).mean()
 
             # Train Logs
-            wandb.log({"Train/Loss_G": train_loss_G, "round": round_idx})
-            wandb.log({"Train/Loss_D": train_loss_D, "round": round_idx})
-            wandb.log({"Train/Loss_D_fake": train_loss_D_fake, "round": round_idx})
-            wandb.log({"Train/Loss_D_real": train_loss_D_real, "round": round_idx})
-            wandb.log({"Train/Loss_G_GAN": train_loss_G_GAN, "round": round_idx})
-            wandb.log({"Train/Loss_G_L1": train_loss_G_L1, "round": round_idx})
-            wandb.log({"Train/Loss_G_perceptual": train_loss_G_perceptual, "round": round_idx})
+            wandb.log({"round": round_idx,
+                       "Train/Loss_G": train_loss_G,
+                       "Train/Loss_G_GAN": train_loss_G_GAN,
+                       "Train/Loss_G_L1": train_loss_G_L1,
+                       "Train/Loss_G_perceptual": train_loss_G_perceptual,
+                       "Train/Loss_D": train_loss_D,
+                       "Train/Loss_D_fake": train_loss_D_fake,
+                       "Train/Loss_D_real": train_loss_D_real,
+                       })
+
             stats_train = {'LossG': train_loss_G,
                            'LossD': train_loss_D,
                            'LossD_fake': train_loss_D_fake,
@@ -292,8 +295,6 @@ class FedGanAggregator(object):
 
         # Test Logs
         plt.tight_layout()
-        wandb.log({"Test/samples": [wandb.Image(plt, caption="syn vs real")]})
-        plt.close()
 
         test_lossG = test_eval_metrics.loss_G
         test_lossD = test_eval_metrics.loss_D
@@ -304,13 +305,18 @@ class FedGanAggregator(object):
         test_lossG_perceptual = test_eval_metrics.loss_G_perceptual
 
         # Test Logs
-        wandb.log({"Test/Loss_G": test_lossG, "round": round_idx})
-        wandb.log({"Test/Loss_D": test_lossD, "round": round_idx})
-        wandb.log({"Test/Loss_D_fake": test_lossD_fake, "round": round_idx})
-        wandb.log({"Test/Loss_D_real": test_lossD_real, "round": round_idx})
-        wandb.log({"Test/Loss_G_GAN": test_lossG_GAN, "round": round_idx})
-        wandb.log({"Test/Loss_G_L1": test_lossG_L1, "round": round_idx})
-        wandb.log({"Test/Loss_G_perceptual": test_lossG_perceptual, "round": round_idx})
+        wandb.log({"round": round_idx,
+                   "Test/Loss_G": test_lossG,
+                   "Test/Loss_G_GAN": test_lossG_GAN,
+                   "Test/Loss_G_L1": test_lossG_L1,
+                   "Test/Loss_G_perceptual": test_lossG_perceptual,
+                   "Test/Loss_D": test_lossD,
+                   "Test/Loss_D_fake": test_lossD_fake,
+                   "Test/Loss_D_real": test_lossD_real,
+                   "Test/samples": [wandb.Image(plt, caption="syn vs real")]
+                   })
+        plt.close()
+
         stats = {'LossG': test_lossG,
                  'LossD': test_lossD,
                  'LossD_fake': test_lossD_fake,

@@ -100,7 +100,7 @@ def build_pairs(dataset, sample_rate=1, im_size=None):
     dcm_arr = []
     label_arr = []
 
-    if 1 > sample_rate > 0.:
+    if 1 > sample_rate >= 0.:
         sample_size = max(1, int(len(keys) * sample_rate))
         sample_idx = np.random.choice(len(keys), sample_size, replace=False)
         keys = [keys[i] for i in sample_idx]

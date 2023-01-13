@@ -130,9 +130,10 @@ class GeneralDataLoader(DataLoader):
         if hasattr(self, 'valid_sampler'):
             return DataLoader(sampler=self.valid_sampler, **self.init_kwargs)
         elif hasattr(self, 'valid_dataset'):
-            val_init_kwargs = self.init_kwargs
+            val_init_kwargs = self.init_kwargs.copy()
             val_init_kwargs['dataset'] = self.valid_dataset
-            return DataLoader(**self.init_kwargs)
+            val_init_kwargs["shuffle"] = False
+            return DataLoader(**val_init_kwargs)  #(**self.init_kwargs)
 
 
 class GeneralDataset(data.Dataset):
@@ -192,10 +193,10 @@ class GeneralDataset(data.Dataset):
 
         orig_split_pos = split_input.shape[:len(split_input.shape) // 2]
         ext_shape = ext_input.shape
-        reshape_ooutput_size = list(output_size)
-        reshape_ooutput_size.insert(0, -1)
+        reshape_output_size = list(output_size)
+        reshape_output_size.insert(0, -1)
 
-        split_input = np.reshape(split_input, reshape_ooutput_size)
+        split_input = np.reshape(split_input, reshape_output_size)
 
         return split_input, orig_split_pos, ext_shape
 

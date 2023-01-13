@@ -2,7 +2,7 @@
 model: 'dadgan'
 checkname: 'dadgan'
 dataset: 'path'
-data_dir: "/data/datasets/exp2_path/for_gan_training_286"
+data_dir: "../../../../datasets/hist"
 partition_method: 'hetero'
 partition_alpha: 0.5
 client_num_in_total: 4

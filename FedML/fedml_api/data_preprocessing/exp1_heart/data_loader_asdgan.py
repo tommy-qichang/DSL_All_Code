@@ -8,6 +8,7 @@ import os
 
 
 from .data_utility import init_transform, count_samples, build_pairs
+from fedml_api.Dist_FID.fid_score import get_activations
 
 
 logging.basicConfig()
@@ -16,7 +17,7 @@ logger.setLevel(logging.INFO)
 
 
 def get_transforms_G():
-    transforms_train = ["RandomCrop", "RandomFlip"]  # TODO: data augmentation
+    transforms_train = ["RandomCrop", "RandomFlip"]  # data augmentation
     transforms_args_train = {
         "RandomCrop": [256],
         "RandomFlip": [True, True]
@@ -55,7 +56,7 @@ def get_dataloader_G(h5_train, h5_test, train_bs, test_bs, sample_method, channe
         test_ds = TestDataset(h5_test,
                               channel_in=channel_in,
                               path="train",
-                              sample_rate=0.01,
+                              sample_rate=0.001,
                               transforms=transform_test)
         test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=False, pin_memory=True)
     else:
@@ -286,6 +287,27 @@ class DatasetD:
             label_batch.append(datapoint['mask'])
 
         return torch.stack(data_batch), torch.stack(label_batch)
+
+    def get_data_statistics(self, batch_size=50, device='cpu', num_workers=1):
+        """Calculation of the statistics used by the Dist-FID.
+            Params:
+            -- batch_size  : The images numpy array is split into batches with
+                             batch size batch_size. A reasonable batch size
+                             depends on the hardware.
+            -- device      : Device to run calculations
+            -- num_workers : Number of parallel dataloader workers
+
+            Returns:
+            -- mu    : The mean over samples of the activations of the pool_3 layer of
+                       the inception model.
+            -- sigma : The covariance matrix of the activations of the pool_3 layer of
+                       the inception model.
+            """
+
+        act = get_activations(self.dcm, batch_size=batch_size, device=device, num_workers=num_workers)
+        mu = np.mean(act, axis=0)
+        sigma = np.cov(act, rowvar=False)
+        return mu, sigma
 
     def __len__(self):
         return len(self.dcm)

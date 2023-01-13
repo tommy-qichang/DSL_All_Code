@@ -22,7 +22,7 @@ def tversky_loss(output, target, misc, alpha=0.5, beta=0.5, eps=1e-7):
     num_classes = output.shape[1]
     if num_classes == 1:
         true_1_hot = torch.eye(num_classes + 1)[target.squeeze(1)]
-        true_1_hot = true_1_hot.permute(0, 3, 1, 2).float()
+        true_1_hot = true_1_hot.permute(0, 3, 1, 2).contiguous().float()
         true_1_hot_f = true_1_hot[:, 0:1, :, :]
         true_1_hot_s = true_1_hot[:, 1:2, :, :]
         true_1_hot = torch.cat([true_1_hot_s, true_1_hot_f], dim=1)
@@ -31,7 +31,7 @@ def tversky_loss(output, target, misc, alpha=0.5, beta=0.5, eps=1e-7):
         probas = torch.cat([pos_prob, neg_prob], dim=1)
     else:
         true_1_hot = torch.eye(num_classes)[target.squeeze(1)]
-        true_1_hot = true_1_hot.permute(0, 3, 1, 2).float()
+        true_1_hot = true_1_hot.permute(0, 3, 1, 2).contiguous().float()
         probas = F.softmax(output, dim=1)
     true_1_hot = true_1_hot.type(output.type())
     dims = (0,) + tuple(range(2, target.ndimension()))

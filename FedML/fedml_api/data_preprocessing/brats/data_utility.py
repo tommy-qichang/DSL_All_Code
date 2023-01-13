@@ -31,11 +31,13 @@ def mr_normalization(img, bd_low=0.1, bd_up=99.9, mean_i=None, std_i=None):
     img[img<np.percentile(img, bd_low)] = np.percentile(img, bd_low)
 
     if mean_i is not None and std_i is not None:
-        factor_scale = np.std(img)/std_i
-        img = img / factor_scale
-        factor_shift = np.mean(img) - mean_i
+        old_mean = np.mean(img)
+        old_std = np.std(img)
+        factor_shift = old_mean - mean_i
         img = img - factor_shift
-
+        factor_scale = old_std/std_i
+        img = img / factor_scale
+        
     return img
 
 
@@ -58,14 +60,15 @@ def get_img_list_h5(h5_filepath, paths):
     return img_list
 
 
-def merge_skull_brats(skull_mask, slice_label, default_skull_value=5):
+def merge_skull_brats(skull_mask, slice_label, default_skull_value=0.98):  # 5 skull_value, 0.98 tmp value
 
     # Add skull structure into label
     skull_mask = ndimage.binary_fill_holes(skull_mask)
     skull_mask = cv2.Laplacian(skull_mask.astype("uint8"), cv2.CV_8U)  # edge detection
+    skull_mask = skull_mask.astype('float32')
     skull_mask[skull_mask > 0] = default_skull_value
     slice_label = slice_label + skull_mask
-    # slice_label = slice_label * (255 / np.max(slice_label))  # max is default_skull_value
+    slice_label = slice_label * (255 / max(4.0, default_skull_value))
 
     return slice_label
 
@@ -76,7 +79,7 @@ def merge_brain_mask_brats(brain_mask, slice_label, default_brain_value=1):
     brain_mask = ndimage.binary_fill_holes(brain_mask)
     brain_mask[brain_mask > 0] = default_brain_value
     slice_label = slice_label + brain_mask
-    # slice_label = slice_label * (255 / 5)  # max value of label in brats is 4
+    slice_label = slice_label * (255 / 5.0)  # max value of label in brats is 4 + 1
 
     return slice_label
 
@@ -87,7 +90,7 @@ def build_pairs(dataset, channel=None, sample_rate=1, use_brain_mask=False, im_s
     label_arr = []
     # seg_arr = []
 
-    if 1 > sample_rate > 0.:
+    if 1 > sample_rate >= 0.:
         sample_size = max(1, int(len(keys) * sample_rate))
         sample_idx = np.random.choice(len(keys), sample_size, replace=False)
         keys = [keys[i] for i in sample_idx]
@@ -112,9 +115,6 @@ def build_pairs(dataset, channel=None, sample_rate=1, use_brain_mask=False, im_s
                 dcm = dcm_new
             else:
                 assert(type(channel) is int)
-        # dcm = dcm.astype("uint8")
-        # seg_label = np.copy(label).astype("uint8")
-        # seg_label = seg_label * (255 / 4)
 
         # If different modality has different signal region, the multi-channel label may be inconsistent. use the first-channel dcm only.
         if use_brain_mask:
@@ -122,20 +122,20 @@ def build_pairs(dataset, channel=None, sample_rate=1, use_brain_mask=False, im_s
         else:  # skull mask
             label = merge_skull_brats((dcm[0]>0).astype('uint8'), label)
 
-        label = label[np.newaxis, ...].astype("uint8")
+        label = np.round(label[np.newaxis, ...])  # label[np.newaxis, ...].astype("uint8")
 
         if im_size is not None:
             dcm = np.moveaxis(dcm, 0, -1)
             label = np.moveaxis(label, 0, -1)
 
             dcm = resize(dcm, im_size, order=1, preserve_range=True)
-            label = resize(label, im_size, order=0, preserve_range=True).astype("uint8")
+            label = resize(label, im_size, order=0, preserve_range=True)
 
             dcm = np.moveaxis(dcm, -1, 0)
             label = np.moveaxis(label, -1, 0)
 
         dcm_arr.append(dcm)
-        label_arr.append(label)
+        label_arr.append(label.astype("uint8"))
         # seg_arr.append(seg_label)
 
     return dcm_arr, label_arr, keys

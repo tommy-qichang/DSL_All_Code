@@ -73,7 +73,7 @@ def get_scheduler(optimizer, opt):
     """
     if opt.lr_policy == 'linear':
         def lambda_rule(epoch):
-            lr_l = max(0.0, 1.0 - max(0, epoch + opt.epoch_count - opt.niter) / float(opt.niter_decay + 1))
+            lr_l = max(0.000001, 1.0 - max(0, epoch + opt.epoch_count - opt.niter) / float(opt.niter_decay + 1))
             return lr_l
         scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_rule)
     elif opt.lr_policy == 'step':
@@ -380,8 +380,11 @@ class ResnetGenerator(nn.Module):
 
         for i in range(n_downsampling):  # add upsampling layers
             mult = 2 ** (n_downsampling - i)
-            model += [upconv2x2(ngf * mult, int(ngf * mult / 2), mode=up_mode,
-                                use_bias=use_bias),
+            # model += [upconv2x2(ngf * mult, int(ngf * mult / 2), mode=up_mode, use_bias=use_bias),
+            model += [nn.ConvTranspose2d(ngf * mult, int(ngf * mult / 2),
+                               kernel_size=3, stride=2,
+                               padding=1, output_padding=1,
+                               bias=use_bias),
                       norm_layer(int(ngf * mult / 2)),
                       nn.ReLU(True)]
         model += [nn.ReflectionPad2d(3)]

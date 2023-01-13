@@ -2,13 +2,10 @@
 import h5py
 import numpy as np
 
-train_all = "/data/datasets/asdgan_data/fedgan_syn/heart_h5_all/heart_resnet_9blocks_epoch110_experiment_0.h5"
-train_h5 = "/data/datasets/asdgan_data/fedgan_seg_data_heart/heart_resnet_9blocks_epoch110_experiment_0_trainset.h5"
-val_h5 = "/data/datasets/asdgan_data/fedgan_seg_data_heart/heart_resnet_9blocks_epoch110_experiment_0_valset.h5"
+train_all = "../../../../datasets/fedgan_syn/heart_h5_all/heart_resnet_9blocks_epoch110_experiment_0.h5"
+train_h5 = "../../../../datasets/fedgan_seg_data_heart/heart_resnet_9blocks_epoch110_experiment_0_trainset.h5"
+val_h5 = "../../../../datasets/fedgan_seg_data_heart/heart_resnet_9blocks_epoch110_experiment_0_valset.h5"
 
-# train_all = "/data/datasets/FSL/all_train_2d_iso_original_size.h5"
-# train_h5 = "/data/datasets/FSL/all_train_2d_iso_original_size_trainset.h5"
-# val_h5 = "/data/datasets/FSL/all_train_2d_iso_original_size_valset.h5"
 
 val_ids_whs = {'whs_0', 'whs_1', 'whs_3', 'whs_14'}
 

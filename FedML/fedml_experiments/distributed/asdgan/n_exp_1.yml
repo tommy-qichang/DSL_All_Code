@@ -2,7 +2,7 @@
 model: 'asdgan'
 checkname: 'asdgan'
 dataset: 'heart'
-data_dir: "/data/datasets/FSL"
+data_dir: "../../../../datasets/cardiac"
 partition_method: 'hetero'
 client_num_in_total: 3
 client_num_per_round: 3

@@ -47,7 +47,7 @@ def get_dataloader(h5_train, h5_test, train_bs, test_bs, channel_in=3):
     if h5_test is not None:
         test_ds = GeneralDataset(h5_test,
                                  channel_in=channel_in,
-                                 sample_rate=0.1,
+                                 sample_rate=0.01,
                                  transforms=transform_test)
         test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=False, pin_memory=True)
     else:
@@ -170,8 +170,8 @@ class TestDataset(data.Dataset):
         h5_file.close()
 
     def __getitem__(self, index):
-        if self.channel_in == 3:
-            A = np.repeat(self.label[index], 3, axis=0).astype("float32")
+        if self.channel_in > 1:
+            A = np.repeat(self.label[index], self.channel_in, axis=0).astype("float32")
         else:
             A = np.copy(self.label[index]).astype("float32")
         B = np.copy(self.im[index])

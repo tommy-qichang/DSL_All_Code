@@ -180,12 +180,15 @@ class FedSegAggregator(object):
             train_dice = np.array([self.train_dice_client_dict[k] for k in self.train_dice_client_dict.keys()]).mean()
 
             # Train Logs
-            wandb.log({"Train/Acc": train_acc, "round": round_idx})
-            wandb.log({"Train/Acc_class": train_acc_class, "round": round_idx})
-            wandb.log({"Train/mIoU": train_mIoU, "round": round_idx})
-            wandb.log({"Train/FWIoU": train_FWIoU, "round": round_idx})
-            wandb.log({"Train/Loss": train_loss, "round": round_idx})
-            wandb.log({"Train/Dice": train_dice, "round": round_idx})
+            wandb.log({"round": round_idx,
+                       "Train/Acc": train_acc,
+                       "Train/Acc_class": train_acc_class,
+                       "Train/mIoU": train_mIoU,
+                       "Train/FWIoU": train_FWIoU,
+                       "Train/Loss": train_loss,
+                       "Train/Dice": train_dice,
+                       })
+
             stats_train = {'training_acc': train_acc,
                         'training_acc_class': train_acc_class,
                         'training_mIoU': train_mIoU,
@@ -203,12 +206,15 @@ class FedSegAggregator(object):
         test_dice = np.array([self.test_dice_client_dict[k] for k in self.test_dice_client_dict.keys()]).mean()
 
         # Test Logs
-        wandb.log({"Test/Acc": test_acc, "round": round_idx})
-        wandb.log({"Test/Acc_class": test_acc_class, "round": round_idx})
-        wandb.log({"Test/mIoU": test_mIoU, "round": round_idx})
-        wandb.log({"Test/FWIoU": test_FWIoU, "round": round_idx})
-        wandb.log({"Test/Loss": test_loss, "round": round_idx})
-        wandb.log({"Test/Dice": test_dice, "round": round_idx})
+        wandb.log({"round": round_idx,
+                   "Test/Acc": test_acc,
+                   "Test/Acc_class": test_acc_class,
+                   "Test/mIoU": test_mIoU,
+                   "Test/FWIoU": test_FWIoU,
+                   "Test/Loss": test_loss,
+                   "Test/Dice": test_dice,
+                   })
+
         stats_test = {'testing_acc': test_acc,
                     'testing_acc_class': test_acc_class,
                     'testing_mIoU': test_mIoU,

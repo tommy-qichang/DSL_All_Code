@@ -107,7 +107,7 @@ def create_dataset(args, channel_in, test_bs, sample_rate=0.1):
         transforms_test = ["Resize", "ToTensorScale", "Normalize"]
         transforms_args_test = {
             "Resize": [args.crop_size],
-            "ToTensorScale": ['float', 255, 5],
+            "ToTensorScale": ['float', 255, 255],
             "Normalize": [0.5, 0.5]
         }
         transform_test = init_transform(transforms_test, transforms_args_test)
@@ -129,11 +129,12 @@ def create_dataset(args, channel_in, test_bs, sample_rate=0.1):
                                  transforms=transform_test)
     elif 'path' in args.dataset:
         from fedml_api.data_preprocessing.exp2_path.data_loader_gan import TestDataset
-        h5_test = '/data/datasets/exp2_path/for_seg_256/train_all.h5'
+        h5_test = os.path.join(args.data_dir, 'train_all.h5')  # random crop in for_gan_training_286
 
-        transforms_test = ["CenterCrop", "ToTensorScale", "Normalize"]
+        transforms_test = ["RandomResize", "RandomCrop", "ToTensorScale", "Normalize"]
         transforms_args_test = {
-            "CenterCrop": [args.crop_size],
+            "RandomResize": [[1, 1.05]],
+            "RandomCrop": [args.crop_size],
             "ToTensorScale": ['float', 255, 255],
             "Normalize": [0.5, 0.5]
         }
@@ -149,7 +150,7 @@ def create_dataset(args, channel_in, test_bs, sample_rate=0.1):
         print(h5_test)
         transforms_test = ["CropPadding", "ToTensorScale", "Normalize"]
         transforms_args_test = {
-            "CropPadding": [256],
+            "CropPadding": [args.crop_size],
             "ToTensorScale": ['float', 1.0, 7.0],
             "Normalize": [0.5, 0.5]
         }
@@ -193,8 +194,8 @@ def save_data(A, B, fake_B, labels_ternary, weight_map, key, file, dataset, news
         gt[gt==5] = 0  # remove skull label
 
         save_type = "train"
-        file.create_dataset(f"{save_type}/{key}/data", data=syn_img.astype("uint8"))
-        file.create_dataset(f"{save_type}/{key}/label", data=gt.astype("uint8"))
+        file.create_dataset(f"{save_type}/{key}/data", data=syn_img.astype("uint8"), compression="gzip")
+        file.create_dataset(f"{save_type}/{key}/label", data=gt.astype("uint8"), compression="gzip")
         # file.create_dataset(f"{save_type}/{key}/labels_with_skull", data=label)
         # file.create_dataset(f"{save_type}/{key}/reference_real_image_please_dont_use", data=real_img)
     elif 'path' in dataset:
@@ -208,8 +209,8 @@ def save_data(A, B, fake_B, labels_ternary, weight_map, key, file, dataset, news
         if newsize:
             label = resize(label, newsize, order=0, preserve_range=True)
         save_type = "train"
-        file.create_dataset(f"{save_type}/{key}/data", data=syn_img.astype("uint8"))
-        file.create_dataset(f"{save_type}/{key}/label", data=label.astype("uint8"))
+        file.create_dataset(f"{save_type}/{key}/data", data=syn_img.astype("uint8"), compression="gzip")
+        file.create_dataset(f"{save_type}/{key}/label", data=label.astype("uint8"), compression="gzip")
 
 
 def plot_syn_brats(A, B, fake_B, key, save_dir, mod_names):

@@ -1,4 +1,4 @@
-echo "Downloading Nuclei dataset into DSL and FedML"
+echo "Downloading Nuclei dataset into FedD-GAN and FedML"
 
 TARGET_DIR=./datasets/hist
 mkdir -p $TARGET_DIR

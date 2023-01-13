@@ -74,7 +74,7 @@ class Unet(nn.Module):
         self.u8 = ConvUpBlock(128, 64)
         # final conv
         self.ce = nn.Conv2d(64, out_channel, kernel_size=1)
-        self.relu = nn.ReLU()
+        # self.relu = nn.ReLU()
 
     def forward(self, x):
         x, c1 = self.c1(x)
@@ -88,5 +88,5 @@ class Unet(nn.Module):
         x = self.u7(x, c2)
         x = self.u8(x, c1)
         x = self.ce(x)
-        x = self.relu(x)
+        # x = self.relu(x)
         return x

@@ -111,7 +111,6 @@ python save_syn.py --cfg n_exp_2.yml --batch_size 1 --save_dir ./run/path/asdgan
 - run on background
 
 ```
-nohup sh run_asdgan_distributed_pytorch.sh 4 default.yml > ./log_default.txt 2>&1 &
 nohup sh run_asdgan_distributed_pytorch.sh 4 n_exp_1.yml> ./log_nature_exp1.txt 2>&1 &
 nohup sh run_asdgan_distributed_pytorch.sh 5 n_exp_2.yml> ./log_nature_exp2.txt 2>&1 &
 nohup sh run_asdgan_distributed_pytorch.sh 4 n_exp_4.yml> ./log_nature_exp4.txt 2>&1 &
@@ -123,8 +122,6 @@ nohup sh run_asdgan_distributed_pytorch.sh 4 n_exp_4_miss_mod.yml> ./log_nature_
 save 3 * 20 synthetic images to visualize
 
 ```
-python save_syn.py --cfg default.yml --batch_size 20 --save_dir ./run/brats_t2/asdgan/experiment_1 --epoch 50 --GPUid 0 --num_test 3
-
 python save_syn.py --cfg n_exp_1.yml --batch_size 20 --save_dir ./run/heart/asdgan/experiment_0 --epoch 200 --GPUid 0 --num_test 3
 python save_syn.py --cfg n_exp_2.yml --batch_size 20 --save_dir ./run/path/asdgan/experiment_0 --epoch 200 --GPUid 0 --num_test 3
 python save_syn.py --cfg n_exp_4.yml --batch_size 20 --save_dir ./run/brats/asdgan_mc/experiment_0 --epoch 200 --GPUid 0 --num_test 3
@@ -133,23 +130,24 @@ python save_syn.py --cfg n_exp_4.yml --batch_size 20 --save_dir ./run/brats/asdg
 
 save all synthetic images to h5 file for training segmentation model
 ```
-python save_syn.py --cfg exp_2.yml --batch_size 20 --save_dir ./run/brats_t2/asdgan/experiment_2 --epoch 200 --GPUid 0 --num_test -1 --save_data
-
-python save_syn.py --cfg exp_5.yml --batch_size 20 --save_dir ./run/brats_t2/asdgan/experiment_5 --epoch 200 --GPUid 0 --num_test -1 --save_data
-
 python save_syn.py --cfg n_exp_1.yml --batch_size 1 --save_dir ./run/heart/asdgan/experiment_0 --epoch 200 --GPUid 0 --save_data
 python save_syn.py --cfg n_exp_2.yml --batch_size 1 --save_dir ./run/path/asdgan/experiment_0 --epoch 200 --GPUid 0 --save_data
 python save_syn.py --cfg n_exp_4.yml --batch_size 1 --save_dir ./run/brats/asdgan_mc/experiment_0 --epoch 200 --GPUid 0 --save_data
 ```
 
-## calculate Dist-FID
+## calculate FID or Dist-FID
 
 ```
 cd ./segmentation/utils/
 
-python ./cal_fid.py [-h] --real_h5 REAL_H5 [--fake_h5 FAKE_H5 [FAKE_H5 ...]]
+python ./cal_fid.py [-h] --real_h5 REAL_H5 --fake_h5 FAKE_H5 [FAKE_H5 ...]
 [--lv1_name LV1_NAME] [--oldformat] [--isrgb]
 [--fake_h5_ch FAKE_H5_CH]
 
+python ./cal_dist_fid.py [-h] --real_stats REAL_stats1 [REAL_stats2 ...] --fake_h5 FAKE_H5 [FAKE_H5 ...]
+[--lv1_name LV1_NAME] [--oldformat] [--isrgb]
+[--fake_h5_ch FAKE_H5_CH]
+
+e.g. python cal_dist_fid.py --real_stats run/brats/asdgan_mc/experiment_0/client_0_data_stats.npz run/brats/asdgan_mc/experiment_0/client_1_data_stats.npz run/brats/asdgan_mc/experiment_0/client_2_data_stats.npz --fake_h5 datasets/asdgan_syn/brats_h5_all/brats_resnet_9blocks_epoch100_experiment_0.h5 datasets/asdgan_syn/brats_h5_all/brats_resnet_9blocks_epoch150_experiment_0.h5 datasets/asdgan_syn/brats_h5_all/brats_resnet_9blocks_epoch200_experiment_0.h5
 ```
 

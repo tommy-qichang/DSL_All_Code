@@ -47,10 +47,10 @@ def add_args(parser):
     parser.add_argument('--backbone_freezed', action='store_true', default=None,
                         help='Freeze backbone to extract features only once (default: False)')
 
-    parser.add_argument('--sync_bn', action='store_true', default=None,
+    parser.add_argument('--sync_bn', type=str2bool, default=None,
                         help='whether to use sync bn (default: auto)')
 
-    parser.add_argument('--freeze_bn', action='store_true', default=None,
+    parser.add_argument('--freeze_bn', type=str2bool, default=None,
                         help='whether to freeze bn parameters (default: False)')
 
     parser.add_argument('--save_client_model', type=str2bool, default=None,
@@ -99,7 +99,7 @@ def add_args(parser):
     parser.add_argument('--weight_decay', type=float, default=None,
                         metavar='M', help='w-decay (default: 5e-4)')
 
-    parser.add_argument('--nesterov', action='store_true', default=None,
+    parser.add_argument('--nesterov', type=str2bool, default=None,
                         help='whether use nesterov (default: False)')
 
     parser.add_argument('--epochs', type=int, default=None, metavar='EP',
@@ -133,13 +133,13 @@ def add_args(parser):
     parser.add_argument('--norm', type=str, default=None, help='instance normalization or batch normalization [instance | batch | none]')
     parser.add_argument('--init_type', type=str, default=None, help='network initialization [normal | xavier | kaiming | orthogonal]')
     parser.add_argument('--init_gain', type=float, default=None, help='scaling factor for normal, xavier and orthogonal.')
-    parser.add_argument('--no_dropout', default=None, action='store_true', help='no dropout for the generator')
+    parser.add_argument('--no_dropout', default=None, type=str2bool, help='no dropout for the generator')
     parser.add_argument('--lambda_L1', type=float, default=None, help='weight for L1 loss')
     parser.add_argument('--lambda_perceptual', type=float, default=None, help='weight for perceptual loss')
     parser.add_argument('--lambda_G', type=float, default=None, help='weight for dadgan G')
     parser.add_argument('--lambda_D', type=float, default=None, help='weight for dadgan D')
     parser.add_argument('--pool_size', type=int, default=None, help='the size of image buffer that stores previously generated images')
-    parser.add_argument('--continue_train', default=None, action='store_true', help='continue training: load the latest model')  # not working now
+    parser.add_argument('--continue_train', default=None, type=str2bool, help='continue training: load the latest model')  # not working now
     parser.add_argument('--load_iter', type=int, default=0)
     parser.add_argument('--save_dir', type=str, default=None)
     parser.add_argument('--load_filename', type=str, default=None)
@@ -149,11 +149,14 @@ def add_args(parser):
     parser.add_argument('--niter_decay', type=int, default=None, help='# of iter to linearly decay learning rate to zero, for lr_policy == linear')
     parser.add_argument('--lr_decay_iters', type=int, default=None, help='multiply by a gamma every lr_decay_iters iterations, for lr_policy == step')
     parser.add_argument('--lr_decay_gamma', type=float, default=None, help='gamma for lr_policy == step')
-    parser.add_argument('--verbose', default=None, action='store_true', help='if specified, print more debugging information')
+    parser.add_argument('--verbose', default=None, type=str2bool, help='if specified, print more debugging information')
 
     parser.add_argument('--brain_mask_input', type=int, default=None, choices=[0, 1], help='skull input if 0, else brain mask input')
     parser.add_argument('--brain_mask_noise', type=float, default=None, help='rate of applying noise on brain mask')
-    parser.add_argument('--mask_L1_loss', default=None, action='store_true', help='use brain mask to calc L1 loss')
+    parser.add_argument('--mask_L1_loss', default=None, type=str2bool, help='use brain mask to calc L1 loss')
+
+    parser.add_argument('--dp_C', type=float, default=None, help='clipping threshold of gradient norm in DP')
+    parser.add_argument('--dp_sigma', type=float, default=None, help='sigma of normal noise in DP')
 
     args = parser.parse_args()
 

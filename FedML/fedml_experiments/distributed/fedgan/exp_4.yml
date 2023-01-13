@@ -2,7 +2,7 @@
 model: 'dadgan_mc'
 checkname: 'dadgan_mc'
 dataset: 'brats'
-data_dir: "/data/qichang/federated_synthetic_learning_nature/exp4_modality_complete"
+data_dir: "../../../../datasets/brats"
 partition_method: 'hetero'
 partition_alpha: 0.5
 client_num_in_total: 3

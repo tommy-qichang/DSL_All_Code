@@ -1,4 +1,4 @@
-echo "Downloading BraTS dataset for DSL and FedML"
+echo "Downloading BraTS dataset for FedD-GAN and FedML"
 
 TARGET_DIR=./datasets/brats
 mkdir -p $TARGET_DIR

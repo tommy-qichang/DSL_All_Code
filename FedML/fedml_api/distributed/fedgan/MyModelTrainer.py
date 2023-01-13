@@ -38,7 +38,7 @@ class MyModelTrainer(ModelTrainer):
         self.id = id
         self.node_name = 'Client {}'.format(id) if id > -1 else 'Server'
 
-        self.model.setup(args)
+        self.model.setup(args, id)
 
     def get_model_params(self):
         logging.info('[{}] Obtain model parameters'.format(self.node_name))

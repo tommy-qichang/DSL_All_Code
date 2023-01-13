@@ -16,6 +16,6 @@ class NormalizeChannel(object):
         assert len(image.shape) == 3, "The channel wised normalization should have at 3 channels."
         mean, std = image.mean(axis=(1,2)), image.std(axis=(1,2))
 
-        image = F.normalize(image, mean,std)
+        image = F.normalize(image, mean, std)
 
         return {"image":image, "mask":mask, "misc": misc}

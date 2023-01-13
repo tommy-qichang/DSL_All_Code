@@ -1,5 +1,5 @@
 
-import surface_distance
+import metric.surface_distance.metrics as metrics
 import torch
 import numpy as np
 
@@ -17,7 +17,8 @@ def hausdorff_distance95_calc(output, target, misc, label_idx):
     if "spacing_mm" in misc:
         spacing_mm = misc['spacing_mm']
     else:
-        spacing_mm = 1
+        spacing_mm = [1, 1, 1]
+    # print('hd spacing:', spacing_mm)
     with torch.no_grad():
         pred = torch.argmax(output, 1)
         pred_bool = (pred == label_idx)
@@ -25,6 +26,6 @@ def hausdorff_distance95_calc(output, target, misc, label_idx):
         assert pred_bool.shape == target_bool.shape
         pred_bool = pred_bool.cpu().numpy()
         target_bool = target_bool.cpu().numpy()
-        sd = surface_distance.compute_surface_distances(target_bool, pred_bool, spacing_mm)
-        hd = surface_distance.compute_robust_hausdorff(sd, 95)
+        sd = metrics.compute_surface_distances(target_bool, pred_bool, spacing_mm)
+        hd = metrics.compute_robust_hausdorff(sd, 95)
     return hd
