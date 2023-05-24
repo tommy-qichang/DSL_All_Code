@@ -1,6 +1,7 @@
-matplotlib
+h5py
 numpy
 Pillow
 pytorch
 torchvision
-NearPy
+skimage
+sklearn
