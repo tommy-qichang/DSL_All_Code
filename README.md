@@ -1,4 +1,5 @@
 # DSL
+[![DOI](https://zenodo.org/badge/531561838.svg)](https://zenodo.org/badge/latestdoi/531561838)
 Official implementation of paper "Mining Multi-Center Heterogeneous Medical Data with Distributed Synthetic Learning"
 
 ## System Requirements
